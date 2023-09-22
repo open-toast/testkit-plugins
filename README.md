@@ -4,8 +4,8 @@ Provides a simple, opinionated structure for writing [TestKit](https://docs.grad
 tests for Gradle plugins and collecting code coverage from them. Contains the following components:
 
 * The _main plugin_, `com.toasttab.testkit` is applied to the plugin project.
-* The _junit5 extension_ injects the test project model into junit5 tests.
-* The _jacoco plugin_, `com.toasttab.testkit.jacoco` is applied to testkit test fixture projects.
+* The _junit5 extension_ injects the test project model into JUnit 5 tests.
+* The _coverage plugin_, `com.toasttab.testkit.coverage` is applied to TestKit fixture projects.
 
 ## Setup
 
@@ -31,15 +31,15 @@ src/test/projects/MyTest/sometest:
    settings.gradle.kts # optional, but IntelliJ will complain
 ```
 
-In the test `build.gradle.kts`, make sure to apply the jacoco testkit plugin.
+In the test project's `build.gradle.kts`, make sure to apply the coverage plugin.
 
 ```
 plugins {
-    id("com.toasttab.testkit.jacoco") version <<version>>
+    id("com.toasttab.testkit.coverage") version <<version>>
 }
 ```
 
-Now, write the actual test
+Now, write the actual test. Note that a `TestProject` instance will be automatically injected into the test method.
 
 ```kotlin
 @TestKit
@@ -55,18 +55,18 @@ class MyTest {
 
 ## Code coverage
 
-It is notoriously difficult to collect code coverage data from testkit tests. The root of the challenge
-is that by default, testkit tests launch in a separate Gradle daemon JVM, which lingers after the tests finish. 
+It is notoriously difficult to collect code coverage data from TestKit tests. The root of the challenge
+is that by default, TestKit tests launch in a separate Gradle daemon JVM, which lingers after the tests finish. 
 This presents the following problems
 
-* The TestKit JVM needs to start with the jacoco agent attached to it.
+* The TestKit JVM needs to start with the Jacoco agent attached to it.
 * Jacoco data from the TestKit JVM is not flushed until the JVM terminates; however, the JVM lingers past the TestKit test execution.
 * The lingering TestKit JVM may continue writing out jacoco coverage data while Gradle tries to collect the jacoco output file, resulting in intermittent build failures.
 * TestKit tests and other unit tests cannot use the same jacoco output file because they may overwrite each other.
 
-To solve these problems, the junit5 extension starts a jacoco coverage tcpserver and passes the right
-jacoco javaagent parameters into the testkit build. The jacoco coverage server writes coverage data into a separate file.
-The jacoco plugin applied to the testkit project ensures that the coverage is flushed after the test finishes. 
+To solve these problems, the junit5 extension starts a Jacoco coverage TCP server and passes the right
+Jacoco agent parameters into the TestKit build. The Jacoco coverage TCP server writes coverage data into a separate file.
+The jacoco plugin applied to the TestKit project ensures that the coverage is flushed after the test finishes. 
 And finally, the main plugin wires everything together.
 
 See

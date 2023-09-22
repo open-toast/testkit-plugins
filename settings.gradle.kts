@@ -14,5 +14,5 @@ rootProject.name = "testkit-plugins"
 apply(plugin = "net.vivin.gradle-semantic-build-versioning")
 
 include(
-    ":junit5", ":common", ":testkit-plugin", ":runtime-plugin"
+    ":junit5", ":common", ":testkit-plugin", ":coverage-plugin"
 )

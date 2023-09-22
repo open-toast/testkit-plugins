@@ -16,7 +16,7 @@ gradlePlugin {
             implementationClass = "com.toasttab.gradle.testkit.TestkitPlugin"
             description = ProjectInfo.description
             displayName = ProjectInfo.name
-            tags = listOf("gradle", "testkit")
+            tags = listOf("jacoco", "testkit")
         }
     }
 }
