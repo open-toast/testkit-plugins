@@ -1,5 +1,9 @@
 # TestKit Plugins
 
+[![Github Actions](https://github.com/open-toast/testkit-plugins/actions/workflows/ci.yml/badge.svg)](https://github.com/open-toast/testkit-plugins/actions/workflows/ci.yml)
+[![Maven Central](https://img.shields.io/maven-central/v/com.toasttab.gradle.testkit/testkit-plugin)](https://search.maven.org/artifact/com.toasttab.gradle.testkit/testkit-plugin)
+[![Gradle Portal](https://img.shields.io/maven-metadata/v/https/plugins.gradle.org/m2/com/toasttab/gradle/testkit/testkit-plugin/maven-metadata.xml.svg?label=gradle-portal&color=yellowgreen)](https://plugins.gradle.org/plugin/com.toasttab.testkit)
+
 Provides a simple, opinionated structure for writing [TestKit](https://docs.gradle.org/current/userguide/test_kit.html)-based 
 tests for Gradle plugins and collecting code coverage from them. Contains the following components:
 
