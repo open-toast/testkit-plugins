@@ -10,6 +10,7 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.filter
 import org.gradle.kotlin.dsl.named
+import org.gradle.kotlin.dsl.register
 import org.gradle.testing.jacoco.tasks.JacocoReportBase
 import javax.inject.Inject
 
@@ -25,7 +26,7 @@ class TestkitPlugin @Inject constructor(
         val destfile = project.layout.buildDirectory.file("jacoco/testkit.exec")
         val testProjectDir = project.layout.buildDirectory.dir("test-projects")
 
-        project.tasks.create<Copy>("copyTestProjects") {
+        project.tasks.register<Copy>("copyTestProjects") {
             from(extension.testProjectsDir)
             into(testProjectDir)
 
