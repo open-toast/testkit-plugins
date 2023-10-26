@@ -63,7 +63,7 @@ class TestkitPlugin @Inject constructor(
             // add the TestKit jacoco file to the local jacoco report
             executionData.from(
                 project.layout.buildDirectory.dir("jacoco").map {
-                    project.files("test.exec", "testkit.exec")
+                    it.files("test.exec", "testkit.exec")
                 }
             )
         }
