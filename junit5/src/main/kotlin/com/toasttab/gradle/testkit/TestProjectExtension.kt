@@ -15,6 +15,8 @@
 
 package com.toasttab.gradle.testkit
 
+import org.gradle.testkit.runner.UnexpectedBuildResultException
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.junit.jupiter.api.extension.ParameterContext
@@ -31,7 +33,7 @@ private const val COVERAGE_RECORDER = "coverage-recorder"
 private const val PROJECT = "project"
 private const val LOCATOR = "locator"
 
-class TestProjectExtension : ParameterResolver, BeforeAllCallback {
+class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExecutionCallback {
     override fun beforeAll(context: ExtensionContext) {
         context.getStore(NAMESPACE)
             .put(COVERAGE_RECORDER, CoverageRecorder(System.getProperty(TESTKIT_COVERAGE_OUTPUT)))
@@ -82,4 +84,12 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback {
 
     override fun resolveParameter(parameterContext: ParameterContext, extensionContext: ExtensionContext) =
         project(extensionContext)
+
+    override fun afterTestExecution(context: ExtensionContext) {
+        context.executionException.ifPresent {
+            if (it !is UnexpectedBuildResultException) {
+                context.get<TestProject>(NAMESPACE, PROJECT).logOutput()
+            }
+        }
+    }
 }
