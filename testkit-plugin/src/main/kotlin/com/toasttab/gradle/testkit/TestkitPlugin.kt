@@ -6,6 +6,7 @@ import org.gradle.api.Project
 import org.gradle.api.artifacts.type.ArtifactTypeDefinition
 import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.tasks.Copy
+import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.filter
@@ -39,6 +40,8 @@ class TestkitPlugin @Inject constructor(
             dependsOn("copyTestProjects")
 
             doFirst(JacocoOutputCleanupTestTaskAction(fs, destfile))
+
+            inputs.file(testProjectDir).withPropertyName("testkit-projects-input").withPathSensitivity(PathSensitivity.RELATIVE)
 
             // declare an additional jacoco output file so that the JUnit JVM and the TestKit JVM
             // do not try to write to the same file
