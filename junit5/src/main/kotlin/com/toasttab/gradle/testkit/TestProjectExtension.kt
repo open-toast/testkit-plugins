@@ -33,8 +33,11 @@ private const val LOCATOR = "locator"
 
 class TestProjectExtension : ParameterResolver, BeforeAllCallback {
     override fun beforeAll(context: ExtensionContext) {
-        context.getStore(NAMESPACE)
-            .put(COVERAGE_RECORDER, CoverageRecorder(System.getProperty(TESTKIT_COVERAGE_OUTPUT)))
+        val coverage = CoverageSettings.settings
+
+        if (coverage != null) {
+            context.getStore(NAMESPACE).put(COVERAGE_RECORDER, CoverageRecorder(coverage.output))
+        }
     }
 
     @OptIn(ExperimentalPathApi::class)
@@ -56,16 +59,16 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback {
 
             location.copyToRecursively(target = tempProjectDir, followLinks = false, overwrite = false)
 
-            val collector = context.get<CoverageRecorder>(NAMESPACE, COVERAGE_RECORDER)
+            val coverage = CoverageSettings.settings
 
-            // pipe the jacoco javaagent arguments into the new JVM that testkit launches
-            System.getProperty(TESTKIT_JAVAAGENT)?.let { agent ->
+            if (coverage != null) {
+                val collector = context.get<CoverageRecorder>(NAMESPACE, COVERAGE_RECORDER)
                 tempProjectDir.resolve("gradle.properties").apply {
                     if (!exists()) {
                         createFile()
                     }
 
-                    appendText("\norg.gradle.jvmargs=-javaagent:$agent=output=tcpclient,port=${collector.port},sessionid=test\n")
+                    appendText("\norg.gradle.jvmargs=-javaagent:${coverage.javaagent}=output=tcpclient,port=${collector.port},sessionid=test\n")
                 }
             }
 
