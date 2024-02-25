@@ -1,9 +1,10 @@
 package com.toasttab.gradle.testkit
 
 import org.gradle.testkit.runner.GradleRunner
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
+import strikt.api.expectThat
+import strikt.assertions.isEqualTo
 import java.nio.file.Path
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.copyToRecursively
@@ -28,6 +29,6 @@ class TestkitPluginIntegrationTest {
 
         val data = projectDir.resolve("build/test-projects/test-project/foo").readText().trim()
 
-        Assertions.assertEquals("hello world!", data)
+        expectThat(data).isEqualTo("hello world!")
     }
 }
