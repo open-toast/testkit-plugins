@@ -7,6 +7,14 @@ plugins {
 dependencies {
     implementation(projects.common)
     implementation(gradleApi())
+    testImplementation(libs.strikt.core)
+}
+
+tasks {
+    test {
+        useJUnitPlatform()
+        systemProperty("test-projects", layout.projectDirectory.dir("src/test/test-projects").asFile.path)
+    }
 }
 
 gradlePlugin {

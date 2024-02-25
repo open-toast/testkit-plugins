@@ -41,7 +41,7 @@ class TestkitPlugin @Inject constructor(
 
             doFirst(JacocoOutputCleanupTestTaskAction(fs, destfile))
 
-            inputs.file(testProjectDir).withPropertyName("testkit-projects-input").withPathSensitivity(PathSensitivity.RELATIVE)
+            inputs.dir(testProjectDir).withPropertyName("testkit-projects-input").withPathSensitivity(PathSensitivity.RELATIVE)
 
             // declare an additional jacoco output file so that the JUnit JVM and the TestKit JVM
             // do not try to write to the same file
