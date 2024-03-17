@@ -18,10 +18,6 @@ import javax.inject.Inject
 class TestkitPlugin @Inject constructor(
     private val fs: FileSystemOperations
 ) : Plugin<Project> {
-    private val Project.jacocoJar get() = project.zipTree(project.configurations.getByName("jacocoAgent").asPath).filter {
-        it.name == "jacocoagent.jar"
-    }.singleFile
-
     override fun apply(project: Project) {
         val extension = project.extensions.create<TestkitExtension>("testkitTests")
         val destfile = project.layout.buildDirectory.file("jacoco/testkit.exec")
@@ -47,9 +43,6 @@ class TestkitPlugin @Inject constructor(
             // do not try to write to the same file
             outputs.file(destfile).withPropertyName(TESTKIT_COVERAGE_OUTPUT)
 
-            // pipe the jacoco javaagent location into the new JVM that testkit launches
-            // see TestProjectExtension and Gradle's JacocoPlugin class
-            systemProperty(TESTKIT_JAVAAGENT, "${project.jacocoJar}")
             systemProperty(TESTKIT_COVERAGE_OUTPUT, "${destfile.get()}")
             systemProperty(TESTKIT_PROJECTS, "${testProjectDir.get()}")
         }

@@ -15,6 +15,7 @@ tasks {
 
 dependencies {
     implementation(projects.common)
+    implementation(projects.jacocoReflect)
     implementation(libs.junit)
     implementation(gradleTestKit())
     implementation(libs.jacoco.core)

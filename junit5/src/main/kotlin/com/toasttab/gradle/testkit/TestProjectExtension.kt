@@ -70,7 +70,7 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
                         createFile()
                     }
 
-                    appendText("\norg.gradle.jvmargs=-javaagent:${coverage.javaagent}=output=tcpclient,port=${collector.port},sessionid=test\n")
+                    appendText("\norg.gradle.jvmargs=-javaagent:${coverage.javaagent}=output=tcpclient,port=${collector.port},sessionid=test,includes=${coverage.includes},excludes=${coverage.excludes}\n")
                 }
             }
 

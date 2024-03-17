@@ -7,6 +7,7 @@ plugins {
 dependencies {
     implementation(gradleApi())
     implementation(projects.common)
+    implementation(projects.jacocoReflect)
 
     testImplementation(projects.junit5)
     testImplementation(libs.junit)
