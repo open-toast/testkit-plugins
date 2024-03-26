@@ -15,13 +15,16 @@
 
 package com.toasttab.gradle.testkit
 
+import com.toasttab.gradle.testkit.jacoco.JacocoRt
 import org.gradle.testkit.runner.GradleRunner
+import org.jacoco.core.data.ExecutionDataReader
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
 import strikt.api.expectThat
-import strikt.assertions.isGreaterThan
+import strikt.assertions.contains
 import java.nio.file.Path
-import kotlin.io.path.fileSize
+import kotlin.io.path.Path
+import kotlin.io.path.inputStream
 import kotlin.io.path.writeText
 
 class FlushJacocoPluginIntegrationTest {
@@ -50,6 +53,20 @@ class FlushJacocoPluginIntegrationTest {
             .withProjectDir(dir.toFile())
             .withPluginClasspath().withArguments("build").build()
 
-        expectThat(file.fileSize()).isGreaterThan(1024)
+        val classes = hashSetOf<String>()
+
+        file.inputStream().buffered().use {
+            ExecutionDataReader(it).apply {
+                setExecutionDataVisitor { data ->
+                    if (data.name.startsWith("com/toasttab")) {
+                        classes.add(data.name)
+                    }
+                }
+
+                setSessionInfoVisitor { }
+            }.read()
+        }
+
+        expectThat(classes).contains(JacocoRt::class.java.name.replace('.', '/'))
     }
 }
