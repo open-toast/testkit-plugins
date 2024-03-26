@@ -12,6 +12,7 @@ dependencies {
     testImplementation(projects.junit5)
     testImplementation(libs.junit)
     testImplementation(libs.strikt.core)
+    testImplementation(libs.jacoco.core)
 }
 
 tasks {
