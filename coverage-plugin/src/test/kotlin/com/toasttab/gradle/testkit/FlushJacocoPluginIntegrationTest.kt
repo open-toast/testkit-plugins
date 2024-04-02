@@ -23,7 +23,6 @@ import org.junit.jupiter.api.io.TempDir
 import strikt.api.expectThat
 import strikt.assertions.contains
 import java.nio.file.Path
-import kotlin.io.path.Path
 import kotlin.io.path.inputStream
 import kotlin.io.path.writeText
 
@@ -50,6 +49,7 @@ class FlushJacocoPluginIntegrationTest {
         )
 
         GradleRunner.create()
+            .withGradleVersion("8.6")
             .withProjectDir(dir.toFile())
             .withPluginClasspath().withArguments("build").build()
 

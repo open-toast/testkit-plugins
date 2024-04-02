@@ -17,24 +17,27 @@ package com.toasttab.gradle.testkit
 
 import org.gradle.testkit.runner.GradleRunner
 import org.slf4j.LoggerFactory
-import java.io.Closeable
 import java.io.StringWriter
 import java.nio.file.Path
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.deleteRecursively
 
 class TestProject(
     val dir: Path,
-    private val cleanup: Boolean
-) : Closeable {
+    private val gradleVersion: GradleVersionArgument,
+    private val cleanup: Boolean,
+) {
+
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TestProject::class.java)
     }
 
     private val output = StringWriter()
+    private val outputLogged = AtomicBoolean()
 
     @OptIn(ExperimentalPathApi::class)
-    override fun close() {
+    fun close() {
         if (cleanup) {
             dir.deleteRecursively()
         }
@@ -46,9 +49,15 @@ class TestProject(
     fun createRunnerWithoutPluginClasspath() = GradleRunner.create()
         .withProjectDir(dir.toFile())
         .forwardStdOutput(output)
-        .forwardStdError(output)
+        .forwardStdError(output).apply {
+            if (gradleVersion.version != null) {
+                withGradleVersion(gradleVersion.version)
+            }
+        }
 
-    fun logOutput() {
-        LOGGER.warn("build output:\n{}", output)
+    fun logOutputOnce() {
+        if (!outputLogged.getAndSet(true)) {
+            LOGGER.warn("build output:\n{}", output)
+        }
     }
 }
