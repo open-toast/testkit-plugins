@@ -19,12 +19,21 @@ import org.junit.jupiter.api.Test
 import strikt.api.expectThat
 import strikt.assertions.contains
 
-@TestKit
+@TestKit(gradleVersions = ["8.6", "8.7"])
 class TestKitIntegrationTest {
     @Test
     fun `basic project`(project: TestProject) {
         expectThat(
             project.createRunnerWithoutPluginClasspath().withArguments("dependencies").build().output
+        ).contains("compileClasspath")
+    }
+
+    @ParameterizedWithGradleVersions
+    fun `basic parameterized project`(project: TestProject) {
+        val output = project.createRunnerWithoutPluginClasspath().withArguments("dependencies").build().output
+
+        expectThat(
+            output
         ).contains("compileClasspath")
     }
 }

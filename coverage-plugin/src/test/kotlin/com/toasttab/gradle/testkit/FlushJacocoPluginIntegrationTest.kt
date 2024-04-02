@@ -42,16 +42,28 @@ class FlushJacocoPluginIntegrationTest {
 
         dir.resolve("build.gradle.kts").writeText(
             """
+                import java.lang.management.ManagementFactory
+                
                 plugins {
                     java
                     id("com.toasttab.testkit.coverage")
                 }
+                
+                val loader = Class.forName("com.toasttab.gradle.testkit.jacoco.JacocoRt").classLoader
+                println("loader = " + loader)
+                println("urls = " + (loader as java.net.URLClassLoader).getURLs().toList())
+                
+                println("vm args = " + ManagementFactory.getRuntimeMXBean().getInputArguments())
+                
             """.trimIndent()
         )
 
         GradleRunner.create()
+            .withGradleVersion("8.6")
             .withProjectDir(dir.toFile())
-            .withPluginClasspath().withArguments("build").build()
+            .withPluginClasspath().withArguments("build").build().also {
+                println("output = ${it.output}")
+            }
 
         val classes = hashSetOf<String>()
 

@@ -28,11 +28,11 @@ import java.net.ServerSocket
 import kotlin.concurrent.thread
 
 internal class CoverageRecorder(
-    outputFile: String
+    settings: CoverageSettings
 ) : ExtensionContext.Store.CloseableResource, ISessionInfoVisitor, IExecutionDataVisitor {
     private val server = ServerSocket(0)
 
-    private val output = FileOutputStream(outputFile)
+    private val output = FileOutputStream(settings.output, true)
     private val writer = ExecutionDataWriter(output)
 
     private val runner = thread {

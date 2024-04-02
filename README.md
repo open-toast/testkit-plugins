@@ -57,7 +57,31 @@ class MyTest {
 }
 ```
 
+## Parameterized Gradle versions
+
+To run a test against multiple versions of Gradle, use the `@ParameterizedWithGradleVersions` annotation.
+Gradle versions can be specified per class in the `@TestKit` annotation or per method in the 
+`@ParameterizedWithGradleVersions` annotation. Each gradle version argument will be automatically 
+injected into the runner created via `TestProject.createRunner`.
+
+```kotlin
+@TestKit(gradleVersions = ["8.6", "8.7"])
+class ParameterizedTest {
+    @Test
+    @ParameterizedWithGradleVersions
+    fun sometest(project: TestProject) {
+        project.createRunner()
+            .withArguments("check")
+            .build() 
+    }
+}
+```
+
 ## Code coverage
+
+> [!WARNING]  
+> Code coverage does not work on Gradle 8.7.
+> Use the parameterized Gradle versions feature described above.
 
 It is notoriously difficult to collect code coverage data from TestKit tests. The root of the challenge
 is that by default, TestKit tests launch in a separate Gradle daemon JVM, which lingers after the tests finish. 
