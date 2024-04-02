@@ -82,6 +82,8 @@ class ParameterizedTest {
 > [!WARNING]  
 > Code coverage collection does not work on Gradle 8.7. 
 > You have to run tests against Gradle 8.6 or below to collect coverage.
+> You can use the parameterized Gradle version feature described above
+> to run tests against both older and newer versions of Gradle.
 
 It is notoriously difficult to collect code coverage data from TestKit tests. The root of the challenge
 is that by default, TestKit tests launch in a separate Gradle daemon JVM, which lingers after the tests finish. 

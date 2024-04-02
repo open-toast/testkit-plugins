@@ -38,7 +38,7 @@ import kotlin.io.path.exists
 private val NAMESPACE = ExtensionContext.Namespace.create(TestProjectExtension::class.java.name, "testkit-project")
 private const val COVERAGE_RECORDER = "coverage-recorder"
 private const val LOCATOR = "locator"
-val PROJECT = "PROJECT"
+private const val PROJECTS = "PROJECTS"
 
 data class ProjectKey(
     val gradleVersion: String?
@@ -79,7 +79,7 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
     override fun afterTestExecution(context: ExtensionContext) {
         context.executionException.ifPresent {
             if (it !is UnexpectedBuildResultException) {
-                context.get<TestProjects>(NAMESPACE, PROJECT).logOutputOnce()
+                context.get<TestProjects>(NAMESPACE, PROJECTS).logOutputOnce()
             }
         }
     }
@@ -113,7 +113,7 @@ private fun ExtensionContext.project(gradleVersion: GradleVersionArgument): Test
         parameters.locator.java.getDeclaredConstructor().newInstance() as ProjectLocator
     }
 
-    return getStore(NAMESPACE).cache(PROJECT) {
+    return getStore(NAMESPACE).cache(PROJECTS) {
         TestProjects()
     }.project(ProjectKey(gradleVersion)) {
         val tempProjectDir = createTempDirectory("junit-gradlekit")
