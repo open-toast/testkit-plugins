@@ -23,6 +23,7 @@ import org.junit.jupiter.api.io.TempDir
 import strikt.api.expectThat
 import strikt.assertions.contains
 import java.nio.file.Path
+import kotlin.io.path.Path
 import kotlin.io.path.inputStream
 import kotlin.io.path.writeText
 
@@ -32,11 +33,10 @@ class FlushJacocoPluginIntegrationTest {
 
     @Test
     fun `coverage is flushed`() {
-        val javaagent = System.getProperty("javaagent")
         val file = dir.resolve("build/testkit.exec")
 
         dir.resolve("gradle.properties").writeText(
-            "org.gradle.jvmargs=-javaagent:$javaagent=destfile=$file"
+            "systemProp.jacoco-agent.destfile=$file"
         )
 
         dir.resolve("build.gradle.kts").writeText(
@@ -49,9 +49,12 @@ class FlushJacocoPluginIntegrationTest {
         )
 
         GradleRunner.create()
-            .withGradleVersion("8.6")
+            .withGradleVersion("8.7")
             .withProjectDir(dir.toFile())
-            .withPluginClasspath().withArguments("build").build()
+            .withPluginClasspath(
+                TestProjectExtension.pluginClasspath()
+            )
+            .withArguments("build", "--stacktrace").build()
 
         val classes = hashSetOf<String>()
 

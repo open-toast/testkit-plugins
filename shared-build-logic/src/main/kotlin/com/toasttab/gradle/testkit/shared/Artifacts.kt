@@ -13,20 +13,16 @@
  * limitations under the License.
  */
 
-package com.toasttab.gradle.testkit
+package com.toasttab.gradle.testkit.shared
 
-import com.toasttab.gradle.testkit.jacoco.JacocoRt
+import org.gradle.api.Project
+import org.gradle.api.artifacts.component.ProjectComponentIdentifier
+import org.gradle.api.artifacts.result.ArtifactResult
+import org.gradle.api.attributes.Attribute
 
-class CoverageSettings(
-    val includes: String,
-    val excludes: String,
-    val output: String
-) {
-    companion object {
-        val settings by lazy {
-            JacocoRt.agent?.let {
-                CoverageSettings(it.includes, it.excludes, System.getProperty("testkit-coverage-output"))
-            }
-        }
-    }
-}
+fun Project.runtimeArtifacts() = configurations.getAt("runtimeClasspath").incoming.artifactView {
+    lenient(true)
+    attributes.attribute(Attribute.of("artifactType", String::class.java), "jar")
+}.artifacts
+
+fun ArtifactResult.isProject() = id.componentIdentifier is ProjectComponentIdentifier

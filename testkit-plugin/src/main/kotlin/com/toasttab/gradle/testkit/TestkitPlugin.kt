@@ -1,5 +1,21 @@
+/*
+ * Copyright (c) 2024 Toast Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.toasttab.gradle.testkit
 
+import com.toasttab.gradle.testkit.shared.configureInstrumentation
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -32,6 +48,8 @@ class TestkitPlugin @Inject constructor(
             }
         }
 
+        project.configureInstrumentation()
+
         project.tasks.named<Test>("test") {
             dependsOn("copyTestProjects")
 
@@ -41,10 +59,10 @@ class TestkitPlugin @Inject constructor(
 
             // declare an additional jacoco output file so that the JUnit JVM and the TestKit JVM
             // do not try to write to the same file
-            outputs.file(destfile).withPropertyName(TESTKIT_COVERAGE_OUTPUT)
+            outputs.file(destfile).withPropertyName("testkit-coverage-output")
 
-            systemProperty(TESTKIT_COVERAGE_OUTPUT, "${destfile.get()}")
-            systemProperty(TESTKIT_PROJECTS, "${testProjectDir.get()}")
+            systemProperty("testkit-coverage-output", "${destfile.get()}")
+            systemProperty("testkit-projects", "${testProjectDir.get()}")
         }
 
         project.pluginManager.withPlugin("jvm-test-suite") {

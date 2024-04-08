@@ -17,6 +17,7 @@ package com.toasttab.gradle.testkit
 
 import org.gradle.testkit.runner.GradleRunner
 import org.slf4j.LoggerFactory
+import java.io.File
 import java.io.StringWriter
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicBoolean
@@ -25,6 +26,7 @@ import kotlin.io.path.deleteRecursively
 
 class TestProject(
     val dir: Path,
+    private val classpath: List<File>,
     private val gradleVersion: GradleVersionArgument,
     private val cleanup: Boolean,
 ) {
@@ -43,8 +45,13 @@ class TestProject(
         }
     }
 
-    fun createRunner() = createRunnerWithoutPluginClasspath()
-        .withPluginClasspath()
+    fun createRunner() = createRunnerWithoutPluginClasspath().apply {
+        if (classpath.isEmpty()) {
+            withPluginClasspath()
+        } else {
+            withPluginClasspath(classpath)
+        }
+    }
 
     fun createRunnerWithoutPluginClasspath() = GradleRunner.create()
         .withProjectDir(dir.toFile())
