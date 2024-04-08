@@ -24,9 +24,27 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.deleteRecursively
 
+sealed interface PluginClasspath {
+    fun apply(runner: GradleRunner): GradleRunner
+
+    object Default: PluginClasspath {
+        override fun apply(runner: GradleRunner) = runner.withPluginClasspath()
+    }
+
+    class Custom(
+        private val paths: List<Path>
+    ): PluginClasspath {
+
+        init {
+            println("PATHS = $paths")
+        }
+        override fun apply(runner: GradleRunner) = runner.withPluginClasspath(paths.map(Path::toFile))
+    }
+}
+
 class TestProject(
     val dir: Path,
-    private val classpath: List<File>,
+    private val classpath: PluginClasspath,
     private val gradleVersion: GradleVersionArgument,
     private val cleanup: Boolean,
 ) {
@@ -45,13 +63,7 @@ class TestProject(
         }
     }
 
-    fun createRunner() = createRunnerWithoutPluginClasspath().apply {
-        if (classpath.isEmpty()) {
-            withPluginClasspath()
-        } else {
-            withPluginClasspath(classpath)
-        }
-    }
+    fun createRunner() = createRunnerWithoutPluginClasspath().let(classpath::apply)
 
     fun createRunnerWithoutPluginClasspath() = GradleRunner.create()
         .withProjectDir(dir.toFile())

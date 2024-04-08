@@ -26,15 +26,18 @@ import org.junit.jupiter.api.extension.ParameterResolver
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
 import java.io.File
+import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.Path
 import kotlin.io.path.appendText
 import kotlin.io.path.copyToRecursively
 import kotlin.io.path.createFile
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.exists
+import kotlin.io.path.listDirectoryEntries
 
 private val NAMESPACE = ExtensionContext.Namespace.create(TestProjectExtension::class.java.name, "testkit-project")
 private const val COVERAGE_RECORDER = "coverage-recorder"
@@ -136,7 +139,16 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
                             createFile()
                         }
 
-                        appendText("\nsystemProp.jacoco-agent.output=tcpclient\nsystemProp.jacoco-agent.port=${collector.port}\nsystemProp.jacoco-agent.sessionid=test\nsystemProp.jacoco-agent.includes=${coverage.includes}\nsystemProp.jacoco-agent.excludes=${coverage.excludes}\n")
+                        appendText("""
+                            
+                            # custom jacoco properties
+                            
+                            systemProp.jacoco-agent.output=tcpclient
+                            systemProp.jacoco-agent.port=${collector.port}
+                            systemProp.jacoco-agent.sessionid=test
+                            systemProp.jacoco-agent.includes=${coverage.includes}
+                            systemProp.jacoco-agent.excludes=${coverage.excludes}
+                        """.trimIndent())
                     }
                 }
 
@@ -144,19 +156,18 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
             }
         }
 
-        fun pluginClasspath(): List<File> {
+        fun pluginClasspath(): PluginClasspath {
             val instrumentedProperty = System.getProperty("testkit-plugin-instrumented-jars")
 
             return if (instrumentedProperty != null) {
-                val instrumented = File(instrumentedProperty).listFiles().toList()
-                val external = System.getProperty("testkit-plugin-external-jars").split(File.pathSeparatorChar).map {
-                    File(it)
-                }
-                val jacoco = File(System.getProperty("testkit-plugin-jacoco-jar"))
+                val classpath = Path(instrumentedProperty).listDirectoryEntries().toMutableList()
 
-                instrumented + external + jacoco
+                System.getProperty("testkit-plugin-external-jars").split(File.pathSeparatorChar).mapTo(classpath, ::Path)
+                classpath.add(Path(System.getProperty("testkit-plugin-jacoco-jar")))
+
+                PluginClasspath.Custom(classpath)
             } else {
-                emptyList()
+                PluginClasspath.Default
             }
         }
     }

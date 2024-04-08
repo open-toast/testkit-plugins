@@ -79,27 +79,22 @@ class ParameterizedTest {
 
 ## Code coverage
 
-> [!WARNING]  
-> Code coverage collection does not work on Gradle 8.7. 
-> You have to run tests against Gradle 8.6 or below to collect coverage.
-> You can use the parameterized Gradle version feature described above
-> to run tests against both older and newer versions of Gradle.
+It is notoriously difficult to collect code coverage data from TestKit tests. By default, TestKit tests launch in 
+a separate Gradle daemon JVM, which lingers after the tests finish. Gradle attaches an agent to the daemon JVM
+which instruments all classes from the plugin classpath and makes it impossible for the Jacoco agent to instrument
+classes on the fly.
 
-It is notoriously difficult to collect code coverage data from TestKit tests. The root of the challenge
-is that by default, TestKit tests launch in a separate Gradle daemon JVM, which lingers after the tests finish. 
-This presents the following problems
-
-* The TestKit JVM needs to start with the Jacoco agent attached to it.
-* Jacoco data from the TestKit JVM is not flushed until the JVM terminates; however, the JVM lingers past the TestKit test execution.
-* The lingering TestKit JVM may continue writing out jacoco coverage data while Gradle tries to collect the jacoco output file, resulting in intermittent build failures.
-* TestKit tests and other unit tests cannot use the same jacoco output file because they may overwrite each other.
-
-To solve these problems, the junit5 extension starts a Jacoco coverage TCP server and passes the right
-Jacoco agent parameters into the TestKit build. The Jacoco coverage TCP server writes coverage data into a separate file.
-The jacoco plugin applied to the TestKit project ensures that the coverage is flushed after the test finishes. 
-And finally, the main plugin wires everything together.
+* The main plugin pre-instruments the plugin classes and other project classes that the plugin under test depends on
+  using [Jacoco offline instrumentation](https://www.jacoco.org/jacoco/trunk/doc/offline.html).
+* The junit5 extension configures the TestKit build to use pre-instrumented classes, starts a Jacoco coverage TCP server, 
+  and points the jacoco runtime to the TCP server. 
+* The TCP server writes coverage data into a separate file and stops writing the file when the tests finish running. 
+  This allows the main Gradle process to collect task outputs even though the TestKit process might still be lingering.
+* The jacoco plugin applied to the TestKit project ensures that the coverage is fully flushed after the test finishes. 
+  This ensures that the coverage is recorded even though the TestKit process might still be lingering.
 
 See
 
 * https://github.com/gradle/gradle/issues/1465
 * https://github.com/gradle/gradle/issues/12535
+* https://github.com/gradle/gradle/issues/27328

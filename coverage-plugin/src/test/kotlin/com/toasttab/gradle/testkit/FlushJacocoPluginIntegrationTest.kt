@@ -51,9 +51,7 @@ class FlushJacocoPluginIntegrationTest {
         GradleRunner.create()
             .withGradleVersion("8.7")
             .withProjectDir(dir.toFile())
-            .withPluginClasspath(
-                TestProjectExtension.pluginClasspath()
-            )
+            .let(TestProjectExtension.pluginClasspath()::apply)
             .withArguments("build", "--stacktrace").build()
 
         val classes = hashSetOf<String>()
