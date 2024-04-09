@@ -5,9 +5,16 @@ plugins {
 }
 
 dependencies {
-    implementation(projects.common)
     implementation(gradleApi())
     testImplementation(libs.strikt.core)
+}
+
+sourceSets {
+    main {
+        kotlin {
+            srcDir(rootProject.layout.projectDirectory.dir("shared-build-logic/src/main/kotlin"))
+        }
+    }
 }
 
 tasks {

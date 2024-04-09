@@ -48,10 +48,20 @@ private class ReflectiveJacocoAgent(
  * Provides reflective access to the jacoco agent attached to the current JVM
  */
 object JacocoRt {
-    val agent: JacocoAgent? by lazy {
+    private const val RT_CLASS = "org.jacoco.agent.rt.RT"
+
+    private val agentLookup by lazy {
         runCatching {
-            val rt = ClassLoader.getSystemClassLoader().loadClass("org.jacoco.agent.rt.RT")
+            val rt = try {
+                ClassLoader.getSystemClassLoader().loadClass(RT_CLASS)
+            } catch (e: ClassNotFoundException) {
+                JacocoRt::class.java.classLoader.loadClass(RT_CLASS)
+            }
+
             ReflectiveJacocoAgent(rt.getMethod("getAgent").invoke(null))
-        }.getOrNull()
+        }
     }
+
+    val agent: JacocoAgent? get() = agentLookup.getOrNull()
+    val requiredAgent: JacocoAgent get() = agentLookup.getOrThrow()
 }

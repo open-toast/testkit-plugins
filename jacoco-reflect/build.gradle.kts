@@ -14,8 +14,6 @@ tasks {
 }
 
 dependencies {
-    implementation(projects.common)
-
     testImplementation(projects.junit5)
     testImplementation(libs.junit)
     testImplementation(libs.strikt.core)

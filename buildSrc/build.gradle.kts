@@ -13,6 +13,14 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
     }
 }
 
+sourceSets {
+    main {
+        kotlin {
+            srcDir(layout.projectDirectory.dir("../shared-build-logic/src/main/kotlin"))
+        }
+    }
+}
+
 java {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11

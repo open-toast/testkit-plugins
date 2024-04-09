@@ -32,11 +32,10 @@ class FlushJacocoPluginIntegrationTest {
 
     @Test
     fun `coverage is flushed`() {
-        val javaagent = System.getProperty("javaagent")
         val file = dir.resolve("build/testkit.exec")
 
         dir.resolve("gradle.properties").writeText(
-            "org.gradle.jvmargs=-javaagent:$javaagent=destfile=$file"
+            "systemProp.jacoco-agent.destfile=$file"
         )
 
         dir.resolve("build.gradle.kts").writeText(
@@ -49,9 +48,11 @@ class FlushJacocoPluginIntegrationTest {
         )
 
         GradleRunner.create()
-            .withGradleVersion("8.6")
+            .withGradleVersion("8.7")
             .withProjectDir(dir.toFile())
-            .withPluginClasspath().withArguments("build").build()
+            .let(TestProjectExtension.pluginClasspath()::apply)
+            .withArguments("build", "--configuration-cache")
+            .build()
 
         val classes = hashSetOf<String>()
 

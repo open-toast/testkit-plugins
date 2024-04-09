@@ -1,3 +1,7 @@
+import com.toasttab.gradle.testkit.shared.configureInstrumentation
+import org.gradle.internal.component.external.model.ModuleComponentArtifactIdentifier
+import org.gradle.jvm.tasks.Jar
+
 plugins {
     `kotlin-conventions`
     `plugin-publishing-conventions`
@@ -6,7 +10,6 @@ plugins {
 
 dependencies {
     implementation(gradleApi())
-    implementation(projects.common)
     implementation(projects.jacocoReflect)
 
     testImplementation(projects.junit5)
@@ -15,13 +18,7 @@ dependencies {
     testImplementation(libs.jacoco.core)
 }
 
-tasks {
-    test {
-        systemProperty("javaagent", project.zipTree(project.configurations.getByName("jacocoAgent").asPath).filter {
-            it.name == "jacocoagent.jar"
-        }.singleFile.path)
-    }
-}
+configureInstrumentation()
 
 gradlePlugin {
     plugins {

@@ -25,15 +25,19 @@ import org.junit.jupiter.api.extension.ParameterContext
 import org.junit.jupiter.api.extension.ParameterResolver
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
+import java.io.File
+import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.Path
 import kotlin.io.path.appendText
 import kotlin.io.path.copyToRecursively
 import kotlin.io.path.createFile
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.exists
+import kotlin.io.path.listDirectoryEntries
 
 private val NAMESPACE = ExtensionContext.Namespace.create(TestProjectExtension::class.java.name, "testkit-project")
 private const val COVERAGE_RECORDER = "coverage-recorder"
@@ -97,48 +101,75 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
             Arguments.of(context.project(GradleVersionArgument.of(it)))
         }.stream()
     }
-}
 
-private inline fun <reified T> ExtensionContext.get(namespace: ExtensionContext.Namespace, key: String) =
-    getStore(namespace).get(key, T::class.java)
+    companion object {
+        private inline fun <reified T> ExtensionContext.get(namespace: ExtensionContext.Namespace, key: String) =
+            getStore(namespace).get(key, T::class.java)
 
-private inline fun <K, reified V> ExtensionContext.Store.cache(key: K, noinline f: (K) -> V) =
-    getOrComputeIfAbsent(key, f, V::class.java)
+        private inline fun <K, reified V> ExtensionContext.Store.cache(key: K, noinline f: (K) -> V) =
+            getOrComputeIfAbsent(key, f, V::class.java)
 
-@OptIn(ExperimentalPathApi::class)
-private fun ExtensionContext.project(gradleVersion: GradleVersionArgument): TestProject {
-    val parameters = requiredTestClass.getAnnotation(TestKit::class.java) ?: TestKit()
+        @OptIn(ExperimentalPathApi::class)
+        private fun ExtensionContext.project(gradleVersion: GradleVersionArgument): TestProject {
+            val parameters = requiredTestClass.getAnnotation(TestKit::class.java) ?: TestKit()
 
-    val locator = getStore(NAMESPACE).cache(LOCATOR) {
-        parameters.locator.java.getDeclaredConstructor().newInstance() as ProjectLocator
-    }
+            val locator = getStore(NAMESPACE).cache(LOCATOR) {
+                parameters.locator.java.getDeclaredConstructor().newInstance() as ProjectLocator
+            }
 
-    return getStore(NAMESPACE).cache(PROJECTS) {
-        TestProjects()
-    }.project(ProjectKey(gradleVersion)) {
-        val tempProjectDir = createTempDirectory("junit-gradlekit")
+            return getStore(NAMESPACE).cache(PROJECTS) {
+                TestProjects()
+            }.project(ProjectKey(gradleVersion)) {
+                val tempProjectDir = createTempDirectory("junit-gradlekit")
 
-        val location = locator.projectPath(System.getProperty(TESTKIT_PROJECTS), this)
+                val location = locator.projectPath(System.getProperty("testkit-projects"), this)
 
-        if (!location.exists()) {
-            error { "expected a test project in $location" }
-        }
-
-        location.copyToRecursively(target = tempProjectDir, followLinks = false, overwrite = false)
-
-        val coverage = CoverageSettings.settings
-
-        if (coverage != null) {
-            val collector = get<CoverageRecorder>(NAMESPACE, COVERAGE_RECORDER)
-            tempProjectDir.resolve("gradle.properties").apply {
-                if (!exists()) {
-                    createFile()
+                if (!location.exists()) {
+                    error { "expected a test project in $location" }
                 }
 
-                appendText("\norg.gradle.jvmargs=-javaagent:${coverage.javaagent}=output=tcpclient,port=${collector.port},sessionid=test,includes=${coverage.includes},excludes=${coverage.excludes}\n")
+                location.copyToRecursively(target = tempProjectDir, followLinks = false, overwrite = false)
+
+                val coverage = CoverageSettings.settings
+
+                if (coverage != null) {
+                    val collector = get<CoverageRecorder>(NAMESPACE, COVERAGE_RECORDER)
+                    tempProjectDir.resolve("gradle.properties").apply {
+                        if (!exists()) {
+                            createFile()
+                        }
+
+                        appendText(
+                            """
+                            
+                            # custom jacoco properties
+                            systemProp.jacoco-agent.output=tcpclient
+                            systemProp.jacoco-agent.port=${collector.port}
+                            systemProp.jacoco-agent.sessionid=test
+                            systemProp.jacoco-agent.includes=${coverage.includes}
+                            systemProp.jacoco-agent.excludes=${coverage.excludes}
+                            """.trimIndent()
+                        )
+                    }
+                }
+
+                TestProject(tempProjectDir, pluginClasspath(), gradleVersion, parameters.cleanup)
             }
         }
 
-        TestProject(tempProjectDir, gradleVersion, parameters.cleanup)
+        fun pluginClasspath(): PluginClasspath {
+            val instrumentedProperty = System.getProperty("testkit-plugin-instrumented-jars")
+
+            return if (instrumentedProperty != null) {
+                val classpath = Path(instrumentedProperty).listDirectoryEntries().toMutableList()
+
+                System.getProperty("testkit-plugin-external-jars").split(File.pathSeparatorChar).mapTo(classpath, ::Path)
+                classpath.add(Path(System.getProperty("testkit-plugin-jacoco-jar")))
+
+                PluginClasspath.Custom(classpath)
+            } else {
+                PluginClasspath.Default
+            }
+        }
     }
 }

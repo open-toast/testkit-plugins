@@ -17,18 +17,10 @@ package com.toasttab.gradle.testkit.jacoco
 
 import org.junit.jupiter.api.Test
 import strikt.api.expectThat
-import strikt.assertions.endsWith
 import strikt.assertions.isEqualTo
 import strikt.assertions.isNotNull
 
 class JacocoRtTest {
-    @Test
-    fun `jacoco agent location is sane`() {
-        expectThat(JacocoRt.agent).isNotNull().and {
-            get { location }.endsWith("agent.jar")
-        }
-    }
-
     @Test
     fun `jacoco includes are correct`() {
         expectThat(JacocoRt.agent).isNotNull().and {

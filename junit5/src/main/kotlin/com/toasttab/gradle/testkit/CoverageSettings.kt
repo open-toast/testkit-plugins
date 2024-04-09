@@ -18,7 +18,6 @@ package com.toasttab.gradle.testkit
 import com.toasttab.gradle.testkit.jacoco.JacocoRt
 
 class CoverageSettings(
-    val javaagent: String,
     val includes: String,
     val excludes: String,
     val output: String
@@ -26,7 +25,7 @@ class CoverageSettings(
     companion object {
         val settings by lazy {
             JacocoRt.agent?.let {
-                CoverageSettings(it.location, it.includes, it.excludes, System.getProperty(TESTKIT_COVERAGE_OUTPUT))
+                CoverageSettings(it.includes, it.excludes, System.getProperty("testkit-coverage-output"))
             }
         }
     }
