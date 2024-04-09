@@ -33,10 +33,6 @@ sealed interface PluginClasspath {
     class Custom(
         private val paths: List<Path>
     ) : PluginClasspath {
-
-        init {
-            println("PATHS = $paths")
-        }
         override fun apply(runner: GradleRunner) = runner.withPluginClasspath(paths.map(Path::toFile))
     }
 }

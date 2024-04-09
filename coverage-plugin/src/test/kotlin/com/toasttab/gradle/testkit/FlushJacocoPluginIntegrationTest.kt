@@ -52,7 +52,7 @@ class FlushJacocoPluginIntegrationTest {
             .withGradleVersion("8.7")
             .withProjectDir(dir.toFile())
             .let(TestProjectExtension.pluginClasspath()::apply)
-            .withArguments("build", "--stacktrace").build()
+            .withArguments("build")
 
         val classes = hashSetOf<String>()
 
