@@ -44,7 +44,7 @@ abstract class CopyLocalJars : DefaultTask() {
 
     @TaskAction
     fun copy() {
-        project.copy {
+        project.sync {
             from(artifacts.filter(ArtifactResult::isProject).map {
                 it.file
             })

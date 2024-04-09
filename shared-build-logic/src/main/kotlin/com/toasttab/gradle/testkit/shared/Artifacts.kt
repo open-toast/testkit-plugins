@@ -16,13 +16,22 @@
 package com.toasttab.gradle.testkit.shared
 
 import org.gradle.api.Project
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.artifacts.result.ArtifactResult
 import org.gradle.api.attributes.Attribute
 
+private val ARTIFACT_TYPE_ATTRIBUTE = Attribute.of("artifactType", String::class.java)
+
 fun Project.runtimeArtifacts() = configurations.getAt("runtimeClasspath").incoming.artifactView {
     lenient(true)
-    attributes.attribute(Attribute.of("artifactType", String::class.java), "jar")
+    attributes.attribute(ARTIFACT_TYPE_ATTRIBUTE, "jar")
 }.artifacts
 
 fun ArtifactResult.isProject() = id.componentIdentifier is ProjectComponentIdentifier
+
+fun ArtifactResult.isExternalPluginDependency(): Boolean {
+    val identifier = id.componentIdentifier
+
+    return identifier is ModuleComponentIdentifier && identifier.group != "org.jetbrains.kotlin"
+}

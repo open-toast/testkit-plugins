@@ -18,60 +18,62 @@ package com.toasttab.gradle.testkit.shared
 import org.gradle.api.Project
 import org.gradle.api.artifacts.ArtifactCollection
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+import org.gradle.api.artifacts.result.ArtifactResult
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
+import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import java.io.File
+
+private const val COPY_LOCAL_JARS_TASK = "copyLocalJars"
+private const val INSTRUMENT_LOCAL_JARS_TASK = "instrumentLocalJars"
 
 private fun Project.instrumentedDir() = layout.buildDirectory.dir("instrumented-local-jars")
 private fun Project.localJarsDir() = layout.buildDirectory.dir("local-jars")
 
-private fun Project.jacocoAgentRuntime() = zipTree(configurations.getAt("jacocoAgent").asPath).filter {
+private fun Project.jacocoAgentRuntime() = zipTree(configurations.getAt(JacocoPlugin.AGENT_CONFIGURATION_NAME).asPath).filter {
     it.name == "jacocoagent.jar"
 }.singleFile
 
-private fun ArtifactCollection.externalPluginDependencies() = filter {
-    val identifier = it.id.componentIdentifier
-
-    identifier is ModuleComponentIdentifier && identifier.group != "org.jetbrains.kotlin"
-}
-
 fun Project.configureInstrumentation() {
     pluginManager.withPlugin("jacoco") {
-        tasks.register<CopyLocalJars>("copyLocalJars") {
+        tasks.register<CopyLocalJars>(COPY_LOCAL_JARS_TASK) {
             artifacts = runtimeArtifacts()
 
-            jar = tasks.named<Jar>("jar")
+            jar = tasks.named<Jar>(JavaPlugin.JAR_TASK_NAME)
 
             dir = localJarsDir()
         }
 
-        tasks.register<InstrumentWithJacocoOffline>("instrumentLocalJars") {
-            dependsOn("copyLocalJars")
+        tasks.register<InstrumentWithJacocoOffline>(INSTRUMENT_LOCAL_JARS_TASK) {
+            dependsOn(COPY_LOCAL_JARS_TASK)
 
-            classpath = configurations.getAt("jacocoAnt")
+            classpath = configurations.getAt(JacocoPlugin.ANT_CONFIGURATION_NAME)
 
             jars = localJarsDir()
             dir = instrumentedDir()
         }
 
-        tasks.named<Test>("test") {
-            dependsOn("instrumentLocalJars")
+        tasks.named<Test>(JavaPlugin.TEST_TASK_NAME) {
+            dependsOn(INSTRUMENT_LOCAL_JARS_TASK)
 
             val runtimeArtifacts = runtimeArtifacts()
 
             inputs.files(runtimeArtifacts.artifactFiles).withPropertyName("plugin-artifacts").withPathSensitivity(
                 PathSensitivity.RELATIVE
             )
-            inputs.dir(instrumentedDir())
+            inputs.dir(instrumentedDir()).withPropertyName("instrumented-artifacts")
+                .withPathSensitivity(PathSensitivity.RELATIVE)
 
             systemProperty("testkit-plugin-instrumented-jars", instrumentedDir().get().asFile.path)
-            systemProperty("testkit-plugin-external-jars", runtimeArtifacts.externalPluginDependencies()
-                .joinToString(separator = File.pathSeparator) {
-                    it.file.path
-                })
+            systemProperty("testkit-plugin-external-jars",
+                runtimeArtifacts.filter(ArtifactResult::isExternalPluginDependency)
+                    .joinToString(separator = File.pathSeparator) {
+                        it.file.path
+                    })
             systemProperty("testkit-plugin-jacoco-jar", jacocoAgentRuntime().path)
         }
     }

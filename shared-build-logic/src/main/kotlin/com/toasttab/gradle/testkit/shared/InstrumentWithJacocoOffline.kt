@@ -15,9 +15,12 @@
 
 package com.toasttab.gradle.testkit.shared
 
+import org.gradle.api.Action
 import org.gradle.api.DefaultTask
+import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.Directory
+import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
@@ -37,6 +40,10 @@ abstract class InstrumentWithJacocoOffline : DefaultTask() {
 
     @TaskAction
     fun instrument() {
+        project.delete {
+            delete(dir)
+        }
+
         project.ant.withGroovyBuilder {
             "taskdef"(
                 "name" to "instrument",
