@@ -23,7 +23,6 @@ import org.junit.jupiter.api.io.TempDir
 import strikt.api.expectThat
 import strikt.assertions.contains
 import java.nio.file.Path
-import kotlin.io.path.Path
 import kotlin.io.path.inputStream
 import kotlin.io.path.writeText
 
@@ -52,7 +51,7 @@ class FlushJacocoPluginIntegrationTest {
             .withGradleVersion("8.7")
             .withProjectDir(dir.toFile())
             .let(TestProjectExtension.pluginClasspath()::apply)
-            .withArguments("build")
+            .withArguments("build", "--configuration-cache")
             .build()
 
         val classes = hashSetOf<String>()

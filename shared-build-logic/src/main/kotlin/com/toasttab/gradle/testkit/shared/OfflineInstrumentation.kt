@@ -16,8 +16,6 @@
 package com.toasttab.gradle.testkit.shared
 
 import org.gradle.api.Project
-import org.gradle.api.artifacts.ArtifactCollection
-import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.result.ArtifactResult
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.PathSensitivity
@@ -40,7 +38,7 @@ private fun Project.jacocoAgentRuntime() = zipTree(configurations.getAt(JacocoPl
 
 fun Project.configureInstrumentation() {
     pluginManager.withPlugin("jacoco") {
-        tasks.register<CopyLocalJars>(COPY_LOCAL_JARS_TASK) {
+        tasks.register<CopyLocalJarsTask>(COPY_LOCAL_JARS_TASK) {
             artifacts = runtimeArtifacts()
 
             jar = tasks.named<Jar>(JavaPlugin.JAR_TASK_NAME)
@@ -48,7 +46,7 @@ fun Project.configureInstrumentation() {
             dir = localJarsDir()
         }
 
-        tasks.register<InstrumentWithJacocoOffline>(INSTRUMENT_LOCAL_JARS_TASK) {
+        tasks.register<InstrumentWithJacocoOfflineTask>(INSTRUMENT_LOCAL_JARS_TASK) {
             dependsOn(COPY_LOCAL_JARS_TASK)
 
             classpath = configurations.getAt(JacocoPlugin.ANT_CONFIGURATION_NAME)

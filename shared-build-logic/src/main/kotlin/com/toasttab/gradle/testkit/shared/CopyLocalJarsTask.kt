@@ -26,7 +26,7 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.jvm.tasks.Jar
 
-abstract class CopyLocalJars : DefaultTask() {
+abstract class CopyLocalJarsTask : DefaultTask() {
     @get:InputFiles
     val artifactFiles get() = artifacts.artifactFiles
 

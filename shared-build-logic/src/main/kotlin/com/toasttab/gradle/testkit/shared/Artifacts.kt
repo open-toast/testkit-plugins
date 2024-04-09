@@ -20,10 +20,11 @@ import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.artifacts.result.ArtifactResult
 import org.gradle.api.attributes.Attribute
+import org.gradle.api.plugins.JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME
 
 private val ARTIFACT_TYPE_ATTRIBUTE = Attribute.of("artifactType", String::class.java)
 
-fun Project.runtimeArtifacts() = configurations.getAt("runtimeClasspath").incoming.artifactView {
+fun Project.runtimeArtifacts() = configurations.getAt(RUNTIME_CLASSPATH_CONFIGURATION_NAME).incoming.artifactView {
     lenient(true)
     attributes.attribute(ARTIFACT_TYPE_ATTRIBUTE, "jar")
 }.artifacts

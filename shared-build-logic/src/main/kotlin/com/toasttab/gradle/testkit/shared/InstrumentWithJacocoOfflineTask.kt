@@ -15,12 +15,9 @@
 
 package com.toasttab.gradle.testkit.shared
 
-import org.gradle.api.Action
 import org.gradle.api.DefaultTask
-import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.Directory
-import org.gradle.api.file.FileSystemOperations
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
@@ -28,7 +25,7 @@ import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.withGroovyBuilder
 
-abstract class InstrumentWithJacocoOffline : DefaultTask() {
+abstract class InstrumentWithJacocoOfflineTask : DefaultTask() {
     @InputFiles
     lateinit var classpath: Configuration
 

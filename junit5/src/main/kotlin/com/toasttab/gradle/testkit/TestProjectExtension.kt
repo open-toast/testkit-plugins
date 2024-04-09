@@ -143,7 +143,6 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
                             """
                             
                             # custom jacoco properties
-                            
                             systemProp.jacoco-agent.output=tcpclient
                             systemProp.jacoco-agent.port=${collector.port}
                             systemProp.jacoco-agent.sessionid=test
