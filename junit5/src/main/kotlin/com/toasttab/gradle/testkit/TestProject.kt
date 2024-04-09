@@ -17,7 +17,6 @@ package com.toasttab.gradle.testkit
 
 import org.gradle.testkit.runner.GradleRunner
 import org.slf4j.LoggerFactory
-import java.io.File
 import java.io.StringWriter
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicBoolean
@@ -27,13 +26,13 @@ import kotlin.io.path.deleteRecursively
 sealed interface PluginClasspath {
     fun apply(runner: GradleRunner): GradleRunner
 
-    object Default: PluginClasspath {
+    object Default : PluginClasspath {
         override fun apply(runner: GradleRunner) = runner.withPluginClasspath()
     }
 
     class Custom(
         private val paths: List<Path>
-    ): PluginClasspath {
+    ) : PluginClasspath {
 
         init {
             println("PATHS = $paths")

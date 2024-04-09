@@ -139,7 +139,8 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
                             createFile()
                         }
 
-                        appendText("""
+                        appendText(
+                            """
                             
                             # custom jacoco properties
                             
@@ -148,7 +149,8 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
                             systemProp.jacoco-agent.sessionid=test
                             systemProp.jacoco-agent.includes=${coverage.includes}
                             systemProp.jacoco-agent.excludes=${coverage.excludes}
-                        """.trimIndent())
+                            """.trimIndent()
+                        )
                     }
                 }
 
