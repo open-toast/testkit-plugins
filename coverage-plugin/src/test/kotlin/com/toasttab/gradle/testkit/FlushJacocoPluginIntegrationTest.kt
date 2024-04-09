@@ -53,6 +53,7 @@ class FlushJacocoPluginIntegrationTest {
             .withProjectDir(dir.toFile())
             .let(TestProjectExtension.pluginClasspath()::apply)
             .withArguments("build")
+            .build()
 
         val classes = hashSetOf<String>()
 
