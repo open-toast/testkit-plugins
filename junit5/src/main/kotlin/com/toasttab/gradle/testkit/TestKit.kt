@@ -15,12 +15,14 @@
 
 package com.toasttab.gradle.testkit
 
+import org.junit.jupiter.api.DisplayNameGeneration
 import org.junit.jupiter.api.extension.ExtendWith
 import kotlin.reflect.KClass
 
 @Retention(AnnotationRetention.RUNTIME)
 @Target(AnnotationTarget.CLASS)
 @ExtendWith(TestProjectExtension::class)
+@DisplayNameGeneration(TestKitDisplayNameGenerator::class)
 annotation class TestKit(
     val locator: KClass<out ProjectLocator> = SimpleNameProjectLocator::class,
     val gradleVersions: Array<String> = [],

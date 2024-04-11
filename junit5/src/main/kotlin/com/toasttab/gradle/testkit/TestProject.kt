@@ -74,4 +74,6 @@ class TestProject(
             LOGGER.warn("build output:\n{}", output)
         }
     }
+
+    override fun toString() = "project(gradle: $gradleVersion)"
 }
