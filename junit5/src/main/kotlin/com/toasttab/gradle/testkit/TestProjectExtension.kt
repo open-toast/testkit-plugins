@@ -164,6 +164,7 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
                 val classpath = Path(instrumentedProperty).listDirectoryEntries().toMutableList()
 
                 System.getProperty("testkit-plugin-external-jars").split(File.pathSeparatorChar).mapTo(classpath, ::Path)
+                System.getProperty("testkit-coverage-jars").split(File.pathSeparatorChar).mapTo(classpath, ::Path)
                 classpath.add(Path(System.getProperty("testkit-plugin-jacoco-jar")))
 
                 PluginClasspath.Custom(classpath)

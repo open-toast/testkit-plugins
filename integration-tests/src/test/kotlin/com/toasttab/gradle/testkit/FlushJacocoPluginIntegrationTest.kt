@@ -15,7 +15,6 @@
 
 package com.toasttab.gradle.testkit
 
-import com.toasttab.gradle.testkit.jacoco.JacocoRt
 import org.gradle.testkit.runner.GradleRunner
 import org.jacoco.core.data.ExecutionDataReader
 import org.junit.jupiter.api.Test
@@ -43,6 +42,7 @@ class FlushJacocoPluginIntegrationTest {
                 plugins {
                     java
                     id("com.toasttab.testkit.coverage")
+                    id("com.toasttab.testkit.test")
                 }
             """.trimIndent()
         )
@@ -68,6 +68,6 @@ class FlushJacocoPluginIntegrationTest {
             }.read()
         }
 
-        expectThat(classes).contains(JacocoRt::class.java.name.replace('.', '/'))
+        expectThat(classes).contains(TestPlugin::class.java.name.replace('.', '/'))
     }
 }
