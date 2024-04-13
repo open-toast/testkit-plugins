@@ -2,6 +2,7 @@ plugins {
     `kotlin-conventions`
     `kotlin-dsl`
     `plugin-publishing-conventions`
+    alias(libs.plugins.build.config)
 }
 
 dependencies {
@@ -15,6 +16,11 @@ sourceSets {
             srcDir(rootProject.layout.projectDirectory.dir("shared-build-logic/src/main/kotlin"))
         }
     }
+}
+
+buildConfig {
+    packageName.set("com.toasttab.gradle.testkit")
+    buildConfigField("String", "VERSION", "\"$version\"")
 }
 
 tasks {

@@ -48,14 +48,13 @@ class TestkitPlugin @Inject constructor(
             }
         }
 
-        project.configureInstrumentation()
-
         project.tasks.named<Test>("test") {
             dependsOn("copyTestProjects")
 
             doFirst(JacocoOutputCleanupTestTaskAction(fs, destfile))
 
-            inputs.dir(testProjectDir).withPropertyName("testkit-projects-input").withPathSensitivity(PathSensitivity.RELATIVE)
+            inputs.dir(testProjectDir).withPropertyName("testkit-projects-input")
+                .withPathSensitivity(PathSensitivity.RELATIVE)
 
             // declare an additional jacoco output file so that the JUnit JVM and the TestKit JVM
             // do not try to write to the same file
@@ -65,21 +64,25 @@ class TestkitPlugin @Inject constructor(
             systemProperty("testkit-projects", "${testProjectDir.get()}")
         }
 
-        project.pluginManager.withPlugin("jvm-test-suite") {
-            // add the TestKit jacoco file to outgoing artifacts so that it can be aggregated
-            project.configurations.getAt("coverageDataElementsForTest").outgoing.artifact(destfile) {
-                type = ArtifactTypeDefinition.BINARY_DATA_TYPE
-                builtBy("test")
-            }
-        }
-
-        project.tasks.named<JacocoReportBase>("jacocoTestReport") {
-            // add the TestKit jacoco file to the local jacoco report
-            executionData.from(
-                project.layout.buildDirectory.dir("jacoco").map {
-                    it.files("test.exec", "testkit.exec")
+        project.pluginManager.withPlugin("jacoco") {
+            project.pluginManager.withPlugin("jvm-test-suite") {
+                // add the TestKit jacoco file to outgoing artifacts so that it can be aggregated
+                project.configurations.getAt("coverageDataElementsForTest").outgoing.artifact(destfile) {
+                    type = ArtifactTypeDefinition.BINARY_DATA_TYPE
+                    builtBy("test")
                 }
-            )
+            }
+
+            project.configureInstrumentation("com.toasttab.gradle.testkit:coverage-plugin:${BuildConfig.VERSION}")
+
+            project.tasks.named<JacocoReportBase>("jacocoTestReport") {
+                // add the TestKit jacoco file to the local jacoco report
+                executionData.from(
+                    project.layout.buildDirectory.dir("jacoco").map {
+                        it.files("test.exec", "testkit.exec")
+                    }
+                )
+            }
         }
     }
 }

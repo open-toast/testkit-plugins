@@ -21,6 +21,7 @@ import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
+import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
@@ -36,43 +37,52 @@ private fun Project.jacocoAgentRuntime() = zipTree(configurations.getAt(JacocoPl
     it.name == "jacocoagent.jar"
 }.singleFile
 
-fun Project.configureInstrumentation() {
-    pluginManager.withPlugin("jacoco") {
-        tasks.register<CopyLocalJarsTask>(COPY_LOCAL_JARS_TASK) {
-            artifacts = runtimeArtifacts()
+fun Project.configureInstrumentation(coverageArtifact: Any) {
+    tasks.register<CopyLocalJarsTask>(COPY_LOCAL_JARS_TASK) {
+        artifacts = runtimeArtifacts()
 
-            jar = tasks.named<Jar>(JavaPlugin.JAR_TASK_NAME)
+        jar = tasks.named<Jar>(JavaPlugin.JAR_TASK_NAME)
 
-            dir = localJarsDir()
-        }
+        dir = localJarsDir()
+    }
 
-        tasks.register<InstrumentWithJacocoOfflineTask>(INSTRUMENT_LOCAL_JARS_TASK) {
-            dependsOn(COPY_LOCAL_JARS_TASK)
+    tasks.register<InstrumentWithJacocoOfflineTask>(INSTRUMENT_LOCAL_JARS_TASK) {
+        dependsOn(COPY_LOCAL_JARS_TASK)
 
-            classpath = configurations.getAt(JacocoPlugin.ANT_CONFIGURATION_NAME)
+        classpath = configurations.getAt(JacocoPlugin.ANT_CONFIGURATION_NAME)
 
-            jars = localJarsDir()
-            dir = instrumentedDir()
-        }
+        jars = localJarsDir()
+        dir = instrumentedDir()
+    }
 
-        tasks.named<Test>(JavaPlugin.TEST_TASK_NAME) {
-            dependsOn(INSTRUMENT_LOCAL_JARS_TASK)
+    val coverage = configurations.create("_coverage_plugin_")
+    dependencies {
+        add(coverage.name, coverageArtifact)
+    }
 
-            val runtimeArtifacts = runtimeArtifacts()
+    tasks.named<Test>(JavaPlugin.TEST_TASK_NAME) {
+        dependsOn(INSTRUMENT_LOCAL_JARS_TASK)
 
-            inputs.files(runtimeArtifacts.artifactFiles).withPropertyName("plugin-artifacts").withPathSensitivity(
-                PathSensitivity.RELATIVE
-            )
-            inputs.dir(instrumentedDir()).withPropertyName("instrumented-artifacts")
-                .withPathSensitivity(PathSensitivity.RELATIVE)
+        val runtimeArtifacts = runtimeArtifacts()
 
-            systemProperty("testkit-plugin-instrumented-jars", instrumentedDir().get().asFile.path)
-            systemProperty("testkit-plugin-external-jars",
-                runtimeArtifacts.filter(ArtifactResult::isExternalPluginDependency)
-                    .joinToString(separator = File.pathSeparator) {
-                        it.file.path
-                    })
-            systemProperty("testkit-plugin-jacoco-jar", jacocoAgentRuntime().path)
-        }
+        inputs.files(runtimeArtifacts.artifactFiles).withPropertyName("plugin-artifacts").withPathSensitivity(
+            PathSensitivity.RELATIVE
+        )
+
+        inputs.files(coverage).withPropertyName("coverage-artifacts").withPathSensitivity(
+            PathSensitivity.RELATIVE
+        )
+
+        inputs.dir(instrumentedDir()).withPropertyName("instrumented-artifacts")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+
+        systemProperty("testkit-plugin-instrumented-jars", instrumentedDir().get().asFile.path)
+        systemProperty("testkit-plugin-external-jars",
+            runtimeArtifacts.filter(ArtifactResult::isExternalPluginDependency)
+                .joinToString(separator = File.pathSeparator) {
+                    it.file.path
+                })
+        systemProperty("testkit-coverage-jars", coverage.asPath)
+        systemProperty("testkit-plugin-jacoco-jar", jacocoAgentRuntime().path)
     }
 }

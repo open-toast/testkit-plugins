@@ -1,6 +1,5 @@
 plugins {
     java
-    jacoco
     id("com.toasttab.testkit")
 }
 
