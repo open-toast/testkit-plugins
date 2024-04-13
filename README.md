@@ -39,7 +39,7 @@ In the test project's `build.gradle.kts`, make sure to apply the coverage plugin
 
 ```
 plugins {
-    id("com.toasttab.testkit.coverage") version <<version>>
+    id("com.toasttab.testkit.coverage")
 }
 ```
 
