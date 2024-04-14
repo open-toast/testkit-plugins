@@ -67,7 +67,6 @@ injected into the runner created via `TestProject.createRunner`.
 ```kotlin
 @TestKit(gradleVersions = ["8.6", "8.7"])
 class ParameterizedTest {
-    @Test
     @ParameterizedWithGradleVersions
     fun sometest(project: TestProject) {
         project.createRunner()
