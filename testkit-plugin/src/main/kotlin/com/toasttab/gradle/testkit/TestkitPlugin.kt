@@ -15,7 +15,8 @@
 
 package com.toasttab.gradle.testkit
 
-import com.toasttab.gradle.testkit.shared.configureInstrumentation
+import com.toasttab.gradle.testkit.shared.configureIntegrationPublishing
+import com.toasttab.gradle.testkit.shared.integrationRepo
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -44,7 +45,15 @@ class TestkitPlugin @Inject constructor(
             into(testProjectDir)
 
             if (extension.replaceTokens.isNotEmpty()) {
-                filter<ReplaceTokens>(mapOf("tokens" to extension.replaceTokens))
+                filter<ReplaceTokens>(
+                    mapOf(
+                        "tokens" to mapOf(
+                            "TESTKIT_PLUGIN_VERSION" to BuildConfig.VERSION,
+                            "TESTKIT_INTEGRATION_REPO" to project.integrationRepo,
+                            "VERSION" to "${project.version}"
+                        ) + extension.replaceTokens
+                    )
+                )
             }
         }
 
@@ -62,6 +71,7 @@ class TestkitPlugin @Inject constructor(
 
             systemProperty("testkit-coverage-output", "${destfile.get()}")
             systemProperty("testkit-projects", "${testProjectDir.get()}")
+            systemProperty("testkit-integration-repo", project.integrationRepo)
         }
 
         project.pluginManager.withPlugin("jacoco") {
@@ -73,7 +83,7 @@ class TestkitPlugin @Inject constructor(
                 }
             }
 
-            project.configureInstrumentation("com.toasttab.gradle.testkit:coverage-plugin:${BuildConfig.VERSION}")
+            project.configureIntegrationPublishing()
 
             project.tasks.named<JacocoReportBase>("jacocoTestReport") {
                 // add the TestKit jacoco file to the local jacoco report

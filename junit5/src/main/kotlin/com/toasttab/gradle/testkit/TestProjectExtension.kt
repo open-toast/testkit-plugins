@@ -25,7 +25,6 @@ import org.junit.jupiter.api.extension.ParameterContext
 import org.junit.jupiter.api.extension.ParameterResolver
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
-import java.io.File
 import java.nio.file.Path
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -37,7 +36,6 @@ import kotlin.io.path.copyToRecursively
 import kotlin.io.path.createFile
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.exists
-import kotlin.io.path.listDirectoryEntries
 
 private val NAMESPACE = ExtensionContext.Namespace.create(TestProjectExtension::class.java.name, "testkit-project")
 private const val COVERAGE_RECORDER = "coverage-recorder"
@@ -134,6 +132,7 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
 
                 if (coverage != null) {
                     val collector = get<CoverageRecorder>(NAMESPACE, COVERAGE_RECORDER)
+
                     tempProjectDir.resolve("gradle.properties").apply {
                         if (!exists()) {
                             createFile()
@@ -153,24 +152,45 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
                     }
                 }
 
-                TestProject(tempProjectDir, pluginClasspath(), gradleVersion, parameters.cleanup)
+                createProject(tempProjectDir, gradleVersion, parameters.cleanup)
             }
         }
 
-        fun pluginClasspath(): PluginClasspath {
-            val instrumentedProperty = System.getProperty("testkit-plugin-instrumented-jars")
+        fun createProject(projectDir: Path, gradleVersion: GradleVersionArgument, cleanup: Boolean = true): TestProject {
+            val integrationRepo = System.getProperty("testkit-integration-repo")
 
-            return if (instrumentedProperty != null) {
-                val classpath = Path(instrumentedProperty).listDirectoryEntries().toMutableList()
+            val initArgs = if (integrationRepo != null) {
+                projectDir.appendToFile(
+                    "init.gradle.kts",
+                    """
+    
+                    settingsEvaluated {
+                        pluginManagement {
+                            repositories {
+                                maven(url = "file://$integrationRepo")
+                                gradlePluginPortal()
+                            }
+                        }
+                    }
+                    """.trimIndent()
+                )
 
-                System.getProperty("testkit-plugin-external-jars").split(File.pathSeparatorChar).mapTo(classpath, ::Path)
-                System.getProperty("testkit-coverage-jars").split(File.pathSeparatorChar).mapTo(classpath, ::Path)
-                classpath.add(Path(System.getProperty("testkit-plugin-jacoco-jar")))
-
-                PluginClasspath.Custom(classpath)
+                listOf("--init-script", "init.gradle.kts")
             } else {
-                PluginClasspath.Default
+                emptyList()
             }
+
+            return TestProject(projectDir, gradleVersion, cleanup, initArgs)
         }
     }
+}
+
+private fun Path.appendToFile(fileName: String, text: String) {
+    val file = resolve(fileName)
+
+    if (!file.exists()) {
+        file.createFile()
+    }
+
+    file.appendText(text)
 }

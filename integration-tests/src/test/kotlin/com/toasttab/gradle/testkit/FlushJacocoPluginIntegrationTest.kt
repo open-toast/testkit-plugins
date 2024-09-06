@@ -15,7 +15,6 @@
 
 package com.toasttab.gradle.testkit
 
-import org.gradle.testkit.runner.GradleRunner
 import org.jacoco.core.data.ExecutionDataReader
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.io.TempDir
@@ -31,6 +30,8 @@ class FlushJacocoPluginIntegrationTest {
 
     @Test
     fun `coverage is flushed`() {
+        val version = System.getProperty("version")
+
         val file = dir.resolve("build/testkit.exec")
 
         dir.resolve("gradle.properties").writeText(
@@ -41,18 +42,13 @@ class FlushJacocoPluginIntegrationTest {
             """
                 plugins {
                     java
-                    id("com.toasttab.testkit.coverage")
-                    id("com.toasttab.testkit.test")
+                    id("com.toasttab.testkit.coverage") version("$version")
+                    id("com.toasttab.testkit.integration.test") version("$version")
                 }
             """.trimIndent()
         )
 
-        GradleRunner.create()
-            .withGradleVersion("8.7")
-            .withProjectDir(dir.toFile())
-            .let(TestProjectExtension.pluginClasspath()::apply)
-            .withArguments("build", "--configuration-cache")
-            .build()
+        TestProjectExtension.createProject(dir, GradleVersionArgument.of("8.7")).build("build", "--configuration-cache", "--stacktrace")
 
         val classes = hashSetOf<String>()
 

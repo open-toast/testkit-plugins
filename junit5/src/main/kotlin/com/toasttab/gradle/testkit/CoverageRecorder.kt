@@ -15,11 +15,7 @@
 
 package com.toasttab.gradle.testkit
 
-import org.jacoco.core.data.ExecutionData
 import org.jacoco.core.data.ExecutionDataWriter
-import org.jacoco.core.data.IExecutionDataVisitor
-import org.jacoco.core.data.ISessionInfoVisitor
-import org.jacoco.core.data.SessionInfo
 import org.jacoco.core.runtime.RemoteControlReader
 import org.jacoco.core.runtime.RemoteControlWriter
 import org.junit.jupiter.api.extension.ExtensionContext
@@ -29,42 +25,53 @@ import kotlin.concurrent.thread
 
 internal class CoverageRecorder(
     settings: CoverageSettings
-) : ExtensionContext.Store.CloseableResource, ISessionInfoVisitor, IExecutionDataVisitor {
+) : ExtensionContext.Store.CloseableResource {
     private val server = ServerSocket(0)
 
     private val output = FileOutputStream(settings.output, true)
     private val writer = ExecutionDataWriter(output)
 
+    private val threads = mutableListOf<Thread>()
+
     private val runner = thread {
-        val sock = server.accept()
+        while (!server.isClosed) {
+            val sock = server.accept()
 
-        RemoteControlWriter(sock.getOutputStream())
+            threads.add(
+                thread {
+                    RemoteControlWriter(sock.getOutputStream())
 
-        val reader = RemoteControlReader(sock.getInputStream())
-        reader.setSessionInfoVisitor(this)
-        reader.setExecutionDataVisitor(this)
+                    val reader = RemoteControlReader(sock.getInputStream())
+                    reader.setSessionInfoVisitor { }
 
-        while (reader.read()) {
+                    reader.setExecutionDataVisitor { ex ->
+                        synchronized(writer) {
+                            writer.visitClassExecution(ex)
+                        }
+                    }
+
+                    reader.setRemoteCommandVisitor { _, _ -> }
+
+                    while (reader.read()) {
+                    }
+
+                    synchronized(writer) {
+                        writer.flush()
+                    }
+                    sock.close()
+                }
+            )
         }
-
-        writer.flush()
-        sock.close()
     }
 
     val port: Int get() = server.localPort
 
-    override fun visitSessionInfo(sess: SessionInfo) {
-        writer.visitSessionInfo(sess)
-    }
-
-    override fun visitClassExecution(ex: ExecutionData) {
-        writer.visitClassExecution(ex)
-    }
-
     override fun close() {
-        runner.join(10000)
-        server.close()
+        for (thread in threads) {
+            thread.join(10000)
+        }
 
+        server.close()
         output.close()
     }
 }
