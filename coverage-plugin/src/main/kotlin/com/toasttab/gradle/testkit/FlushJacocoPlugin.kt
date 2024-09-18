@@ -33,6 +33,9 @@ class FlushJacocoPlugin @Inject constructor(
 
 class DumpAction : FlowAction<FlowParameters.None> {
     override fun execute(parameters: FlowParameters.None) {
-        JacocoRt.requiredAgent.dump(false)
+        JacocoRt.requiredAgent.run {
+            writeExecutionData(true)
+            shutdown()
+        }
     }
 }

@@ -23,27 +23,12 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.deleteRecursively
 
-sealed interface PluginClasspath {
-    fun apply(runner: GradleRunner): GradleRunner
-
-    object Default : PluginClasspath {
-        override fun apply(runner: GradleRunner) = runner.withPluginClasspath()
-    }
-
-    class Custom(
-        private val paths: List<Path>
-    ) : PluginClasspath {
-        override fun apply(runner: GradleRunner) = runner.withPluginClasspath(paths.map(Path::toFile))
-    }
-}
-
 class TestProject(
     val dir: Path,
-    private val classpath: PluginClasspath,
     private val gradleVersion: GradleVersionArgument,
     private val cleanup: Boolean,
+    private val initArgs: List<String> = emptyList()
 ) {
-
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TestProject::class.java)
     }
@@ -58,9 +43,13 @@ class TestProject(
         }
     }
 
-    fun createRunner() = createRunnerWithoutPluginClasspath().let(classpath::apply)
+    fun build(vararg args: String) = createRunner(*args).build()
 
-    fun createRunnerWithoutPluginClasspath() = GradleRunner.create()
+    fun buildAndFail(vararg args: String) = createRunner(*args).buildAndFail()
+
+    private fun createRunner(vararg args: String) = createRunner().withArguments(initArgs + args)
+
+    private fun createRunner() = GradleRunner.create()
         .withProjectDir(dir.toFile())
         .forwardStdOutput(output)
         .forwardStdError(output).apply {
@@ -68,6 +57,7 @@ class TestProject(
                 withGradleVersion(gradleVersion.version)
             }
         }
+        .withArguments()
 
     fun logOutputOnce() {
         if (!outputLogged.getAndSet(true)) {

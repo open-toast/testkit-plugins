@@ -18,8 +18,10 @@ package com.toasttab.gradle.testkit.shared
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.file.Directory
+import org.gradle.api.file.RegularFile
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
@@ -29,17 +31,15 @@ abstract class InstrumentWithJacocoOfflineTask : DefaultTask() {
     @InputFiles
     lateinit var classpath: Configuration
 
-    @InputDirectory
-    lateinit var jars: Provider<Directory>
+    @InputFile
+    lateinit var jar: Provider<RegularFile>
 
     @OutputDirectory
     lateinit var dir: Provider<Directory>
 
     @TaskAction
     fun instrument() {
-        project.delete {
-            delete(dir)
-        }
+        val file = jar.get().asFile
 
         project.ant.withGroovyBuilder {
             "taskdef"(
@@ -48,7 +48,7 @@ abstract class InstrumentWithJacocoOfflineTask : DefaultTask() {
                 "classpath" to classpath.asPath
             )
             "instrument"("destdir" to dir.get().asFile.path) {
-                "fileset"("dir" to jars.get().asFile.path)
+                "fileset"("dir" to file.parent, "includes" to file.name)
             }
         }
     }

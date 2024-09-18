@@ -24,13 +24,13 @@ class TestKitIntegrationTest {
     @Test
     fun `basic project`(project: TestProject) {
         expectThat(
-            project.createRunnerWithoutPluginClasspath().withArguments("dependencies").build().output
+            project.build("dependencies").output
         ).contains("compileClasspath")
     }
 
     @ParameterizedWithGradleVersions
     fun `basic parameterized project`(project: TestProject) {
-        val output = project.createRunnerWithoutPluginClasspath().withArguments("dependencies").build().output
+        val output = project.build("dependencies").output
 
         expectThat(
             output

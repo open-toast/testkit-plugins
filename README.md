@@ -35,11 +35,19 @@ src/test/projects/MyTest/sometest:
    settings.gradle.kts # optional, but IntelliJ will complain
 ```
 
-In the test project's `build.gradle.kts`, make sure to apply the coverage plugin.
+Test project files may contain Ant-style placeholders. The predefined placeholders are:
 
-```
+* `@TESTKIT_PLUGIN_VERSION@` - the version of this project
+* `@TESTKIT_INTEGRATION_REPO@` - the location of the integration repository, see below
+* `@VERSION@` - the version of the plugin under test
+
+In the test project's `build.gradle.kts`, make sure to apply the coverage plugin, in addition to the plugin under test.
+Note that both plugins require versions which can be specified using the placeholders above.
+
+```kotlin
 plugins {
-    id("com.toasttab.testkit.coverage")
+    id("com.toasttab.testkit.coverage") version "@TESTKIT_PLUGIN_VERSION@"
+    id("my.plugin.under.test") version "@VERSION@"
 }
 ```
 
@@ -50,9 +58,7 @@ Now, write the actual test. Note that a `TestProject` instance will be automatic
 class MyTest {
     @Test
     fun sometest(project: TestProject) {
-        project.createRunner()
-            .withArguments("check")
-            .build()
+        project.build("check")
     }
 }
 ```
@@ -75,6 +81,16 @@ class ParameterizedTest {
     }
 }
 ```
+
+## Integration repository
+
+This plugin does not use the TestKit's plugin classpath injection mechanism because the mechanism breaks
+in certain scenarios, e.g. when plugins depend on other plugins. Instead, this plugin installs
+the plugin under test and its sibling dependencies, optionally preinstrumented for Jacoco code coverage,
+into an integration repository on disk, an technique borrowed from [DAGP](https://github.com/autonomousapps/dependency-analysis-gradle-plugin). 
+
+The integration repository is then injected into the plugin management repositories via a custom init
+script which is generated on the fly.
 
 ## Code coverage
 
