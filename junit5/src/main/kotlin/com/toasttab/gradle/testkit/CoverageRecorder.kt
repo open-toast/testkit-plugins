@@ -17,61 +17,115 @@ package com.toasttab.gradle.testkit
 
 import org.jacoco.core.data.ExecutionDataWriter
 import org.jacoco.core.runtime.RemoteControlReader
-import org.jacoco.core.runtime.RemoteControlWriter
 import org.junit.jupiter.api.extension.ExtensionContext
 import java.io.FileOutputStream
 import java.net.ServerSocket
+import java.net.Socket
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
-internal class CoverageRecorder(
-    settings: CoverageSettings
+private const val TIMEOUT_MS = 10_000L
+
+private class ReaderTask(
+    private val sock: Socket,
+    private val writer: ExecutionDataWriter
+) : Thread() {
+    private val readingSession = AtomicBoolean(false)
+    private val running = AtomicBoolean(true)
+
+    private val reader = object : RemoteControlReader(sock.getInputStream()) {
+        init {
+            setSessionInfoVisitor { s ->
+                readingSession.set(true)
+            }
+
+            setExecutionDataVisitor { ex ->
+                synchronized(writer) {
+                    writer.visitClassExecution(ex)
+                }
+            }
+        }
+
+        override fun readBlock(blockid: Byte): Boolean {
+            if (blockid == 32.toByte()) {
+                // OK message which follows jacoco tcpclient dumping execution data
+                finishSession()
+            }
+            return super.readBlock(blockid)
+        }
+
+        override fun read() =
+            try {
+                super.read()
+            } catch (e: Exception) {
+                false
+            }
+    }
+
+    init {
+        start()
+    }
+
+    override fun run() {
+        while (reader.read()) { }
+    }
+
+    fun finishSession() {
+        readingSession.set(false)
+
+        synchronized(writer) {
+            writer.flush()
+        }
+
+        if (!running.get()) {
+            sock.close()
+        }
+    }
+
+    fun done() {
+        running.set(false)
+
+        if (!readingSession.get()) {
+            sock.close()
+        }
+
+        join(TIMEOUT_MS)
+    }
+}
+
+class CoverageRecorder(
+    val settings: CoverageSettings
 ) : ExtensionContext.Store.CloseableResource {
     private val server = ServerSocket(0)
 
     private val output = FileOutputStream(settings.output, true)
     private val writer = ExecutionDataWriter(output)
 
-    private val threads = mutableListOf<Thread>()
+    private val tasks = mutableListOf<ReaderTask>()
 
     private val runner = thread {
         while (!server.isClosed) {
-            val sock = server.accept()
+            val sock = try {
+                server.accept()
+            } catch (e: Exception) {
+                break
+            }
 
-            threads.add(
-                thread {
-                    RemoteControlWriter(sock.getOutputStream())
+            tasks.add(ReaderTask(sock, writer))
+        }
 
-                    val reader = RemoteControlReader(sock.getInputStream())
-                    reader.setSessionInfoVisitor { }
-
-                    reader.setExecutionDataVisitor { ex ->
-                        synchronized(writer) {
-                            writer.visitClassExecution(ex)
-                        }
-                    }
-
-                    reader.setRemoteCommandVisitor { _, _ -> }
-
-                    while (reader.read()) {
-                    }
-
-                    synchronized(writer) {
-                        writer.flush()
-                    }
-                    sock.close()
-                }
-            )
+        for (task in tasks) {
+            task.done()
         }
     }
 
     val port: Int get() = server.localPort
 
     override fun close() {
-        for (thread in threads) {
-            thread.join(10000)
-        }
-
         server.close()
+
+        runner.join(TIMEOUT_MS)
+
         output.close()
     }
 }

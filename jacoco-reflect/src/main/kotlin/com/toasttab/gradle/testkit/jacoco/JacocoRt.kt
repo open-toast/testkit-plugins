@@ -18,13 +18,11 @@ package com.toasttab.gradle.testkit.jacoco
 interface JacocoAgent {
     val location: String
 
-    fun writeExecutionData(reset: Boolean)
+    fun dump(reset: Boolean)
 
     val includes: String
 
     val excludes: String
-
-    fun shutdown()
 }
 
 private class ReflectiveJacocoAgent(
@@ -35,11 +33,6 @@ private class ReflectiveJacocoAgent(
         agent.javaClass.getDeclaredField("options").apply { isAccessible = true }.get(agent)
     }
 
-    private val output by lazy {
-        // agent.output
-        agent.javaClass.getDeclaredField("output").apply { isAccessible = true }.get(agent)
-    }
-
     override val location: String
         get() = agent.javaClass.protectionDomain.codeSource.location.file
     override val includes: String
@@ -47,12 +40,8 @@ private class ReflectiveJacocoAgent(
     override val excludes: String
         get() = options.javaClass.getMethod("getExcludes").invoke(options) as String
 
-    override fun writeExecutionData(reset: Boolean) {
-        output.javaClass.getMethod("writeExecutionData", Boolean::class.java).invoke(output, reset)
-    }
-
-    override fun shutdown() {
-        output.javaClass.getMethod("shutdown").invoke(output)
+    override fun dump(reset: Boolean) {
+        agent.javaClass.getMethod("dump", Boolean::class.java).invoke(agent, reset)
     }
 }
 

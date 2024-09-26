@@ -18,7 +18,7 @@ package com.toasttab.gradle.testkit
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 
-class TestPlugin : Plugin<Project> {
+class TestPlugin4 : Plugin<Project> {
     override fun apply(project: Project) {
     }
 }

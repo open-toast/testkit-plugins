@@ -7,6 +7,9 @@ repositories {
     mavenCentral()
 }
 
+group = "com.toasttab.testkit.test"
+version = "1.0"
+
 tasks {
     test {
         useJUnitPlatform()
