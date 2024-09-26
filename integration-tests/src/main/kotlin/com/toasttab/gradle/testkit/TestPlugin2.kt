@@ -15,24 +15,10 @@
 
 package com.toasttab.gradle.testkit
 
-import com.toasttab.gradle.testkit.jacoco.JacocoRt
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.flow.FlowAction
-import org.gradle.api.flow.FlowParameters
-import org.gradle.api.flow.FlowScope
-import javax.inject.Inject
 
-class FlushJacocoPlugin @Inject constructor(
-    private val flowScope: FlowScope
-) : Plugin<Project> {
-    override fun apply(target: Project) {
-        flowScope.always(DumpAction::class.java) { }
-    }
-}
-
-class DumpAction : FlowAction<FlowParameters.None> {
-    override fun execute(parameters: FlowParameters.None) {
-        JacocoRt.requiredAgent.dump(true)
+class TestPlugin2 : Plugin<Project> {
+    override fun apply(project: Project) {
     }
 }

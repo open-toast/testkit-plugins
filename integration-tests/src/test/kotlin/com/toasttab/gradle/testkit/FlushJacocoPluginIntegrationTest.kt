@@ -21,6 +21,7 @@ import org.junit.jupiter.api.io.TempDir
 import strikt.api.expectThat
 import strikt.assertions.contains
 import java.nio.file.Path
+import kotlin.io.path.createDirectory
 import kotlin.io.path.inputStream
 import kotlin.io.path.writeText
 
@@ -32,23 +33,32 @@ class FlushJacocoPluginIntegrationTest {
     fun `coverage is flushed`() {
         val version = System.getProperty("version")
 
-        val file = dir.resolve("build/testkit.exec")
+        val file = dir.resolve("testkit.exec")
+        val recorder = CoverageRecorder(CoverageSettings("", "", file.toString()))
 
-        dir.resolve("gradle.properties").writeText(
-            "systemProp.jacoco-agent.destfile=$file"
-        )
+        for (i in 1..5) {
+            val projectDir = dir.resolve("project$i")
+            projectDir.createDirectory()
 
-        dir.resolve("build.gradle.kts").writeText(
-            """
+            projectDir.resolve("build.gradle.kts").writeText(
+                """
                 plugins {
                     java
                     id("com.toasttab.testkit.coverage") version("$version")
-                    id("com.toasttab.testkit.integration.test") version("$version")
+                    id("com.toasttab.testkit.integration.test$i") version("$version")
                 }
-            """.trimIndent()
-        )
+                """.trimIndent()
+            )
 
-        TestProjectExtension.createProject(dir, GradleVersionArgument.of("8.7")).build("build", "--configuration-cache", "--stacktrace")
+            TestProjectExtension.createProject(
+                projectDir = projectDir,
+                gradleVersion = GradleVersionArgument.of("8.7"),
+                cleanup = true,
+                coverageRecorder = recorder
+            ).build("build", "--configuration-cache", "--stacktrace")
+        }
+
+        recorder.close()
 
         val classes = hashSetOf<String>()
 
@@ -64,6 +74,8 @@ class FlushJacocoPluginIntegrationTest {
             }.read()
         }
 
-        expectThat(classes).contains(TestPlugin::class.java.name.replace('.', '/'))
+        expectThat(classes).contains(
+            (1..5).map { "com/toasttab/gradle/testkit/TestPlugin$it" }
+        )
     }
 }

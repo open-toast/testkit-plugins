@@ -10,12 +10,14 @@ plugins {
 
 gradlePlugin {
     plugins {
-        create("integration") {
-            id = "com.toasttab.testkit.integration.test"
-            implementationClass = "com.toasttab.gradle.testkit.TestPlugin"
-            description = ProjectInfo.description
-            displayName = ProjectInfo.name
-            tags = listOf("jacoco", "testkit")
+        for (i in 1..5) {
+            create("test$i") {
+                id = "com.toasttab.testkit.integration.test$i"
+                implementationClass = "com.toasttab.gradle.testkit.TestPlugin$i"
+                description = "test"
+                displayName = "test"
+                tags = listOf("test")
+            }
         }
     }
 }
@@ -34,7 +36,6 @@ dependencies {
     implementation(gradleApi())
     testImplementation(libs.junit)
     testImplementation(libs.strikt.core)
-    testImplementation(projects.jacocoReflect)
     testImplementation(projects.junit5)
     testImplementation(gradleTestKit())
     testImplementation(libs.jacoco.core)

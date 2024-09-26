@@ -18,13 +18,13 @@ gradlePlugin {
 
 dependencies {
     implementation(gradleApi())
-    implementation(projects.jacocoReflect)
     implementation(libs.jacoco.agent) {
         artifact {
             classifier = "runtime"
             extension = "jar"
         }
     }
+    implementation(projects.jacocoReflect)
 
     testImplementation(projects.junit5)
     testImplementation(libs.junit)

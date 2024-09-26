@@ -74,6 +74,8 @@ class TestkitPlugin @Inject constructor(
             systemProperty("testkit-integration-repo", project.integrationRepo)
         }
 
+        project.configureIntegrationPublishing()
+
         project.pluginManager.withPlugin("jacoco") {
             project.pluginManager.withPlugin("jvm-test-suite") {
                 // add the TestKit jacoco file to outgoing artifacts so that it can be aggregated
@@ -82,8 +84,6 @@ class TestkitPlugin @Inject constructor(
                     builtBy("test")
                 }
             }
-
-            project.configureIntegrationPublishing()
 
             project.tasks.named<JacocoReportBase>("jacocoTestReport") {
                 // add the TestKit jacoco file to the local jacoco report

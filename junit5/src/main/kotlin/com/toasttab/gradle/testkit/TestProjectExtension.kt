@@ -30,7 +30,6 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 import kotlin.io.path.ExperimentalPathApi
-import kotlin.io.path.Path
 import kotlin.io.path.appendText
 import kotlin.io.path.copyToRecursively
 import kotlin.io.path.createFile
@@ -128,35 +127,16 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
 
                 location.copyToRecursively(target = tempProjectDir, followLinks = false, overwrite = false)
 
-                val coverage = CoverageSettings.settings
-
-                if (coverage != null) {
-                    val collector = get<CoverageRecorder>(NAMESPACE, COVERAGE_RECORDER)
-
-                    tempProjectDir.resolve("gradle.properties").apply {
-                        if (!exists()) {
-                            createFile()
-                        }
-
-                        appendText(
-                            """
-                            
-                            # custom jacoco properties
-                            systemProp.jacoco-agent.output=tcpclient
-                            systemProp.jacoco-agent.port=${collector.port}
-                            systemProp.jacoco-agent.sessionid=test
-                            systemProp.jacoco-agent.includes=${coverage.includes}
-                            systemProp.jacoco-agent.excludes=${coverage.excludes}
-                            """.trimIndent()
-                        )
-                    }
-                }
-
-                createProject(tempProjectDir, gradleVersion, parameters.cleanup)
+                createProject(
+                    tempProjectDir,
+                    gradleVersion,
+                    parameters.cleanup,
+                    CoverageSettings.settings?.let { get(NAMESPACE, COVERAGE_RECORDER) }
+                )
             }
         }
 
-        fun createProject(projectDir: Path, gradleVersion: GradleVersionArgument, cleanup: Boolean = true): TestProject {
+        fun createProject(projectDir: Path, gradleVersion: GradleVersionArgument, cleanup: Boolean = true, coverageRecorder: CoverageRecorder?): TestProject {
             val integrationRepo = System.getProperty("testkit-integration-repo")
 
             val initArgs = if (integrationRepo != null) {
@@ -178,6 +158,21 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
                 listOf("--init-script", "init.gradle.kts")
             } else {
                 emptyList()
+            }
+
+            if (coverageRecorder != null) {
+                projectDir.appendToFile(
+                    "gradle.properties",
+                    """
+                            
+                            # custom jacoco properties
+                            systemProp.jacoco-agent.output=tcpclient
+                            systemProp.jacoco-agent.port=${coverageRecorder.port}
+                            systemProp.jacoco-agent.sessionid=test
+                            systemProp.jacoco-agent.includes=${coverageRecorder.settings.includes}
+                            systemProp.jacoco-agent.excludes=${coverageRecorder.settings.excludes}
+                    """.trimIndent()
+                )
             }
 
             return TestProject(projectDir, gradleVersion, cleanup, initArgs)
