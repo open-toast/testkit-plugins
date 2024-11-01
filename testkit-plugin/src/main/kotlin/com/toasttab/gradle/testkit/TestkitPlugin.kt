@@ -16,7 +16,7 @@
 package com.toasttab.gradle.testkit
 
 import com.toasttab.gradle.testkit.shared.configureIntegrationPublishing
-import com.toasttab.gradle.testkit.shared.integrationRepo
+import com.toasttab.gradle.testkit.shared.integrationDirectory
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -49,7 +49,7 @@ class TestkitPlugin @Inject constructor(
                     mapOf(
                         "tokens" to mapOf(
                             "TESTKIT_PLUGIN_VERSION" to BuildConfig.VERSION,
-                            "TESTKIT_INTEGRATION_REPO" to project.integrationRepo,
+                            "TESTKIT_INTEGRATION_REPO" to project.integrationDirectory().path,
                             "VERSION" to "${project.version}"
                         ) + extension.replaceTokens
                     )
@@ -71,7 +71,7 @@ class TestkitPlugin @Inject constructor(
 
             systemProperty("testkit-coverage-output", "${destfile.get()}")
             systemProperty("testkit-projects", "${testProjectDir.get()}")
-            systemProperty("testkit-integration-repo", project.integrationRepo)
+            systemProperty("testkit-integration-repo", project.integrationDirectory().path)
         }
 
         project.configureIntegrationPublishing()
