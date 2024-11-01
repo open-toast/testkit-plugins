@@ -1,7 +1,21 @@
+/*
+ * Copyright (c) 2024 Toast Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.toasttab.gradle.testkit.shared
 
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.attributes.Attribute
 import org.gradle.api.publish.PublishingExtension
@@ -16,7 +30,6 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.plugin.devel.GradlePluginDevelopmentExtension
-import org.gradle.testing.jacoco.plugins.JacocoPlugin
 
 sealed interface RepositoryDescriptor {
     object MavenLocal : RepositoryDescriptor
@@ -59,7 +72,7 @@ fun Project.configureIntegrationPublishing(
     val repo = integrationRepo
 
     afterEvaluate {
-        val jacocoAnt = project.configurations.findByName(JacocoPlugin.ANT_CONFIGURATION_NAME)
+        val coverage = project.coverage()
 
         configurations.getAt(configuration).incoming.artifactView {
             lenient(true)
@@ -67,10 +80,10 @@ fun Project.configureIntegrationPublishing(
         }.artifacts.map {
             it.id.componentIdentifier
         }.filterIsInstance<ProjectComponentIdentifier>().forEach {
-            configureIntegrationPublishingForDependency(project(":${it.projectPath}"), repo, jacocoAnt)
+            configureIntegrationPublishingForDependency(project(":${it.projectPath}"), repo, coverage)
         }
 
-        configureIntegrationPublishingForDependency(this, repo, jacocoAnt)
+        configureIntegrationPublishingForDependency(this, repo, coverage)
     }
 
     tasks.named("test") {
@@ -78,14 +91,14 @@ fun Project.configureIntegrationPublishing(
     }
 }
 
-private fun Project.configureIntegrationPublishingForDependency(project: Project, repo: Any, jacocoAnt: Configuration?) {
+private fun Project.configureIntegrationPublishingForDependency(project: Project, repo: Any, coverage: CoverageConfiguration) {
     project.pluginManager.apply("maven-publish")
 
-    if (jacocoAnt != null) {
+    if (coverage is CoverageConfiguration.Jacoco) {
         project.tasks.register<InstrumentWithJacocoOfflineTask>("instrument") {
             dependsOn("jar")
 
-            classpath = jacocoAnt
+            classpath = coverage.configuration
 
             jar = project.tasks.named<Jar>("jar").flatMap { it.archiveFile }
 
@@ -105,7 +118,16 @@ private fun Project.configureIntegrationPublishingForDependency(project: Project
             create<MavenPublication>(PublicationDescriptor.INTEGRATION_PUBLICATION_NAME) {
                 from(project.components["java"])
 
-                if (jacocoAnt != null) {
+                if (coverage is CoverageConfiguration.Jacoco) {
+                    pom {
+                        injectDependency(
+                            groupId = "org.jacoco",
+                            artifactId = "org.jacoco.agent",
+                            version = coverage.version,
+                            classifier = "runtime"
+                        )
+                    }
+
                     artifacts.clear()
 
                     artifact(project.layout.buildDirectory.file("instrumented/${project.name}-${project.version}.jar")) {
@@ -130,7 +152,7 @@ private fun Project.configureIntegrationPublishingForDependency(project: Project
         }
     }
 
-    if (jacocoAnt != null) {
+    if (coverage is CoverageConfiguration.Jacoco) {
         project.tasks.named<GenerateModuleMetadata>("generateMetadataFileForIntegrationPublication") {
             enabled = false
         }

@@ -1,3 +1,5 @@
+import com.gradle.publish.PublishPlugin
+import com.gradle.publish.PublishTask
 import com.toasttab.gradle.testkit.shared.RepositoryDescriptor
 import com.toasttab.gradle.testkit.shared.configureIntegrationPublishing
 import com.toasttab.gradle.testkit.shared.publishOnlyIf
@@ -22,6 +24,10 @@ gradlePlugin {
     }
 }
 
+jacoco {
+    toolVersion = "0.8.12"
+}
+
 tasks {
     test {
         systemProperty("version", "$version")
@@ -31,6 +37,10 @@ tasks {
 
 configureIntegrationPublishing("testRuntimeClasspath")
 publishOnlyIf { _, repo -> repo == RepositoryDescriptor.INTEGRATION }
+
+tasks.withType<PublishTask> {
+    enabled = false
+}
 
 dependencies {
     implementation(gradleApi())
