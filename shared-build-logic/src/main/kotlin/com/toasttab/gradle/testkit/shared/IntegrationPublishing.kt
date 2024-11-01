@@ -30,14 +30,23 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.plugin.devel.GradlePluginDevelopmentExtension
+import java.net.URI
 
 sealed interface RepositoryDescriptor {
-    object MavenLocal : RepositoryDescriptor
-    data class MavenRemote(val name: String) : RepositoryDescriptor
+    fun isIntegration(): Boolean
+
+    object MavenLocal : RepositoryDescriptor {
+        override fun isIntegration() = false
+    }
+
+    class MavenRemote(val name: String, val url: URI) : RepositoryDescriptor {
+        override fun isIntegration() = name.startsWith(INTEGRATION_REPO_NAME_PREFIX)
+
+        val capitalizedName by lazy { name.simpleCapitalize() }
+    }
 
     companion object {
-        const val INTEGRATION_REPO_NAME = "integration"
-        val INTEGRATION = MavenRemote(INTEGRATION_REPO_NAME)
+        const val INTEGRATION_REPO_NAME_PREFIX = "testkitIntegrationFor"
     }
 }
 
@@ -45,7 +54,7 @@ data class PublicationDescriptor(val name: String) {
     fun isPlugin() = name.endsWith("PluginMarkerMaven")
 
     companion object {
-        const val INTEGRATION_PUBLICATION_NAME = "integration"
+        const val INTEGRATION_PUBLICATION_NAME = "testkitIntegration"
         val INTEGRATION = PublicationDescriptor(INTEGRATION_PUBLICATION_NAME)
     }
 }
@@ -59,17 +68,26 @@ fun Project.publishOnlyIf(predicate: (PublicationDescriptor, RepositoryDescripto
 
     project.tasks.withType<PublishToMavenRepository> {
         onlyIf {
-            predicate(PublicationDescriptor(publication.name), RepositoryDescriptor.MavenRemote(repository.name))
+            predicate(PublicationDescriptor(publication.name), RepositoryDescriptor.MavenRemote(repository.name, repository.url))
         }
     }
 }
 
-val Project.integrationRepo get() = rootProject.layout.buildDirectory.dir("integration-repo").get().asFile.path
+fun Project.integrationDirectory() = layout.buildDirectory.dir("testkit-integration-repo").get().asFile
 
 fun Project.configureIntegrationPublishing(
     configuration: String = "runtimeClasspath"
 ) {
-    val repo = integrationRepo
+    val repo = RepositoryDescriptor.MavenRemote(
+        name = RepositoryDescriptor.INTEGRATION_REPO_NAME_PREFIX + path.split(Regex("\\W+")).mapIndexed { i, s ->
+            if (i == 0) {
+                s
+            } else {
+                s.simpleCapitalize()
+            }
+        }.joinToString(separator = ""),
+        url = integrationDirectory().toURI()
+    )
 
     afterEvaluate {
         val coverage = project.coverage()
@@ -87,11 +105,11 @@ fun Project.configureIntegrationPublishing(
     }
 
     tasks.named("test") {
-        dependsOn("publishIntegrationPublicationToIntegrationRepository")
+        dependsOn("publishTestkitIntegrationPublicationTo${repo.capitalizedName}Repository")
     }
 }
 
-private fun Project.configureIntegrationPublishingForDependency(project: Project, repo: Any, coverage: CoverageConfiguration) {
+private fun Project.configureIntegrationPublishingForDependency(project: Project, repo: RepositoryDescriptor.MavenRemote, coverage: CoverageConfiguration) {
     project.pluginManager.apply("maven-publish")
 
     if (coverage is CoverageConfiguration.Jacoco) {
@@ -109,8 +127,8 @@ private fun Project.configureIntegrationPublishingForDependency(project: Project
     project.extensions.configure<PublishingExtension>("publishing") {
         repositories {
             maven {
-                name = RepositoryDescriptor.INTEGRATION_REPO_NAME
-                url = project.uri("file://$repo")
+                name = repo.name
+                url = repo.url
             }
         }
 
@@ -139,13 +157,13 @@ private fun Project.configureIntegrationPublishingForDependency(project: Project
     }
 
     tasks.named("test") {
-        dependsOn("${project.path}:publishIntegrationPublicationToIntegrationRepository")
+        dependsOn("${project.path}:publishTestkitIntegrationPublicationTo${repo.capitalizedName}Repository")
     }
 
     project.extensions.findByType(
         GradlePluginDevelopmentExtension::class.java
     )?.plugins?.forEach { plugin ->
-        val name = "publish" + plugin.name.capitalize() + "PluginMarkerMavenPublicationToIntegrationRepository"
+        val name = "publish" + plugin.name.simpleCapitalize() + "PluginMarkerMavenPublicationTo${repo.capitalizedName}Repository"
 
         tasks.named("test") {
             dependsOn("${project.path}:$name")
@@ -153,18 +171,20 @@ private fun Project.configureIntegrationPublishingForDependency(project: Project
     }
 
     if (coverage is CoverageConfiguration.Jacoco) {
-        project.tasks.named<GenerateModuleMetadata>("generateMetadataFileForIntegrationPublication") {
+        project.tasks.named<GenerateModuleMetadata>("generateMetadataFileForTestkitIntegrationPublication") {
             enabled = false
         }
     }
 
     project.publishOnlyIf { publication, repository ->
         if (publication == PublicationDescriptor.INTEGRATION) {
-            repository == RepositoryDescriptor.INTEGRATION
-        } else if (repository == RepositoryDescriptor.INTEGRATION) {
+            repository.isIntegration()
+        } else if (repository.isIntegration()) {
             publication.isPlugin()
         } else {
             true
         }
     }
 }
+
+fun String.simpleCapitalize() = replaceFirstChar(Char::titlecaseChar)

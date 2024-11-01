@@ -36,7 +36,7 @@ tasks {
 }
 
 configureIntegrationPublishing("testRuntimeClasspath")
-publishOnlyIf { _, repo -> repo == RepositoryDescriptor.INTEGRATION }
+publishOnlyIf { _, repo -> repo.isIntegration() }
 
 tasks.withType<PublishTask> {
     enabled = false
