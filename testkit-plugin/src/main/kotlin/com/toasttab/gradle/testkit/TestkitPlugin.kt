@@ -44,17 +44,15 @@ class TestkitPlugin @Inject constructor(
             from(extension.testProjectsDir)
             into(testProjectDir)
 
-            if (extension.replaceTokens.isNotEmpty()) {
-                filter<ReplaceTokens>(
-                    mapOf(
-                        "tokens" to mapOf(
-                            "TESTKIT_PLUGIN_VERSION" to BuildConfig.VERSION,
-                            "TESTKIT_INTEGRATION_REPO" to project.integrationRepo,
-                            "VERSION" to "${project.version}"
-                        ) + extension.replaceTokens
-                    )
+            filter<ReplaceTokens>(
+                mapOf(
+                    "tokens" to mapOf(
+                        "TESTKIT_PLUGIN_VERSION" to BuildConfig.VERSION,
+                        "TESTKIT_INTEGRATION_REPO" to project.integrationRepo,
+                        "VERSION" to "${project.version}"
+                    ) + extension.replaceTokens
                 )
-            }
+            )
         }
 
         project.tasks.named<Test>("test") {
