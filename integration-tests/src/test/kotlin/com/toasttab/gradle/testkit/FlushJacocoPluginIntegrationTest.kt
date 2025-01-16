@@ -31,8 +31,6 @@ class FlushJacocoPluginIntegrationTest {
 
     @Test
     fun `coverage is flushed`() {
-        val version = System.getProperty("version")
-
         val file = dir.resolve("testkit.exec")
         val recorder = CoverageRecorder(CoverageSettings("", "", file.toString()))
 
@@ -44,8 +42,8 @@ class FlushJacocoPluginIntegrationTest {
                 """
                 plugins {
                     java
-                    id("com.toasttab.testkit.coverage") version("$version")
-                    id("com.toasttab.testkit.integration.test$i") version("$version")
+                    id("com.toasttab.testkit.coverage")
+                    id("com.toasttab.testkit.integration.test$i")
                 }
                 """.trimIndent()
             )

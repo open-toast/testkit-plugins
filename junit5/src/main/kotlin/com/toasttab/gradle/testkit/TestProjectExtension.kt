@@ -138,6 +138,11 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
 
         fun createProject(projectDir: Path, gradleVersion: GradleVersionArgument, cleanup: Boolean = true, coverageRecorder: CoverageRecorder?): TestProject {
             val integrationRepo = System.getProperty("testkit-integration-repo")
+            val projectVersion = System.getProperty("testkit-project-version")
+            val pluginVersion = System.getProperty("testkit-plugin-version")
+            val plugins = System.getProperty("testkit-plugin-ids")?.split(',')?.joinToString(separator = "\n") {
+                """id("$it") version("$projectVersion")"""
+            } ?: ""
 
             val initArgs = if (integrationRepo != null) {
                 projectDir.appendToFile(
@@ -149,6 +154,11 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
                             repositories {
                                 maven(url = "file://$integrationRepo")
                                 gradlePluginPortal()
+                            }
+                            
+                            plugins {
+                                id("com.toasttab.testkit.coverage") version("$pluginVersion")
+                                $plugins
                             }
                         }
                     }

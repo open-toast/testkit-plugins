@@ -70,6 +70,9 @@ class TestkitPlugin @Inject constructor(
             systemProperty("testkit-coverage-output", "${destfile.get()}")
             systemProperty("testkit-projects", "${testProjectDir.get()}")
             systemProperty("testkit-integration-repo", project.integrationDirectory().path)
+            systemProperty("testkit-plugin-version", BuildConfig.VERSION)
+
+            dependsOn("${project.path}:$name")
         }
 
         project.configureIntegrationPublishing()

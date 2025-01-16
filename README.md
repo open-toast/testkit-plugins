@@ -42,12 +42,11 @@ Test project files may contain Ant-style placeholders. The predefined placeholde
 * `@VERSION@` - the version of the plugin under test
 
 In the test project's `build.gradle.kts`, make sure to apply the coverage plugin, in addition to the plugin under test.
-Note that both plugins require versions which can be specified using the placeholders above.
 
 ```kotlin
 plugins {
-    id("com.toasttab.testkit.coverage") version "@TESTKIT_PLUGIN_VERSION@"
-    id("my.plugin.under.test") version "@VERSION@"
+    id("com.toasttab.testkit.coverage")
+    id("my.plugin.under.test")
 }
 ```
 

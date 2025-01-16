@@ -23,6 +23,7 @@ import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.api.publish.tasks.GenerateModuleMetadata
+import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.get
@@ -160,14 +161,21 @@ private fun Project.configureIntegrationPublishingForDependency(project: Project
         dependsOn("${project.path}:publishTestkitIntegrationPublicationTo${repo.capitalizedName}Repository")
     }
 
-    project.extensions.findByType(
+    val plugins = project.extensions.findByType(
         GradlePluginDevelopmentExtension::class.java
-    )?.plugins?.forEach { plugin ->
-        val name = "publish" + plugin.name.simpleCapitalize() + "PluginMarkerMavenPublicationTo${repo.capitalizedName}Repository"
+    )?.plugins
 
-        tasks.named("test") {
+    tasks.named<Test>("test") {
+        plugins?.forEach { plugin ->
+            val name = "publish" + plugin.name.simpleCapitalize() + "PluginMarkerMavenPublicationTo${repo.capitalizedName}Repository"
             dependsOn("${project.path}:$name")
         }
+
+        plugins?.let {
+            systemProperty("testkit-plugin-ids", it.joinToString(separator = ",") { it.id })
+        }
+
+        systemProperty("testkit-project-version", "${project.version}")
     }
 
     if (coverage is CoverageConfiguration.Jacoco) {

@@ -30,7 +30,7 @@ jacoco {
 
 tasks {
     test {
-        systemProperty("version", "$version")
+        systemProperty("testkit-plugin-version", "$version")
         systemProperty("testkit-integration-repo", layout.buildDirectory.dir("testkit-integration-repo").get().asFile.path)
 
         reports {
