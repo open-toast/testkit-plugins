@@ -31,7 +31,11 @@ jacoco {
 tasks {
     test {
         systemProperty("version", "$version")
-        systemProperty("testkit-integration-repo", rootProject.layout.buildDirectory.dir("integration-repo").get().asFile.path)
+        systemProperty("testkit-integration-repo", layout.buildDirectory.dir("testkit-integration-repo").get().asFile.path)
+
+        reports {
+            junitXml.required = true
+        }
     }
 }
 
