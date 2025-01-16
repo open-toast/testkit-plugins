@@ -168,6 +168,9 @@ private fun Project.configureIntegrationPublishingForDependency(project: Project
     tasks.named<Test>("test") {
         plugins?.forEach { plugin ->
             val name = "publish" + plugin.name.simpleCapitalize() + "PluginMarkerMavenPublicationTo${repo.capitalizedName}Repository"
+
+            println("test depends on $name")
+
             dependsOn("${project.path}:$name")
         }
 
