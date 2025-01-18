@@ -21,8 +21,3 @@ jobs:
         java-version: 17
     - name: Build
       run: ./gradlew check --stacktrace --no-daemon
-    - name: Test Summary
-      uses: test-summary/action@v2
-      with:
-        paths: "**/build/test-results/*/TEST-*.xml"
-      if: always()
