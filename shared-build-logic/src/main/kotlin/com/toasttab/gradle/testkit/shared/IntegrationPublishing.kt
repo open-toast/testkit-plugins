@@ -18,18 +18,22 @@ package com.toasttab.gradle.testkit.shared
 import org.gradle.api.Project
 import org.gradle.api.artifacts.component.ProjectComponentIdentifier
 import org.gradle.api.attributes.Attribute
+import org.gradle.api.internal.plugins.PluginDescriptor
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.maven.tasks.PublishToMavenLocal
 import org.gradle.api.publish.maven.tasks.PublishToMavenRepository
 import org.gradle.api.publish.tasks.GenerateModuleMetadata
+import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.create
+import org.gradle.kotlin.dsl.findByType
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.plugin.devel.GradlePluginDevelopmentExtension
+import org.gradle.plugin.devel.PluginDeclaration
 import java.net.URI
 
 sealed interface RepositoryDescriptor {
@@ -160,14 +164,24 @@ private fun Project.configureIntegrationPublishingForDependency(project: Project
         dependsOn("${project.path}:publishTestkitIntegrationPublicationTo${repo.capitalizedName}Repository")
     }
 
-    project.extensions.findByType(
-        GradlePluginDevelopmentExtension::class.java
-    )?.plugins?.forEach { plugin ->
-        val name = "publish" + plugin.name.simpleCapitalize() + "PluginMarkerMavenPublicationTo${repo.capitalizedName}Repository"
+    tasks.named<Test>("test") {
+        val extension = project.extensions.findByType<GradlePluginDevelopmentExtension>()
 
-        tasks.named("test") {
-            dependsOn("${project.path}:$name")
+        if (extension == null) {
+            logger.warn("No GradlePluginDevelopmentExtension found for project ${project.path}")
+        } else {
+            if (extension.plugins.isEmpty()) {
+                logger.warn("No plugins are declared in project ${project.path}")
+            } else {
+                for (plugin in extension.plugins) {
+                    dependsOn("${project.path}:${plugin.publishTask(repo)}")
+                }
+            }
+
+            systemProperty("testkit-plugin-ids", extension.plugins.joinToString(separator = ",") { it.id })
         }
+
+        systemProperty("testkit-project-version", "${project.version}")
     }
 
     if (coverage is CoverageConfiguration.Jacoco) {
@@ -187,4 +201,7 @@ private fun Project.configureIntegrationPublishingForDependency(project: Project
     }
 }
 
-fun String.simpleCapitalize() = replaceFirstChar(Char::titlecaseChar)
+private fun PluginDeclaration.publishTask(repo: RepositoryDescriptor.MavenRemote) =
+    "publish${name.simpleCapitalize()}PluginMarkerMavenPublicationTo${repo.capitalizedName}Repository"
+
+private fun String.simpleCapitalize() = replaceFirstChar(Char::titlecaseChar)
