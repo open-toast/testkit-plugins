@@ -3,14 +3,6 @@ plugins {
     `library-publishing-conventions`
 }
 
-sourceSets {
-    main {
-        kotlin {
-            srcDir(layout.projectDirectory.dir("../shared-common-logic/src/main/kotlin"))
-        }
-    }
-}
-
 tasks {
     test {
         useJUnitPlatform()

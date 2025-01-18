@@ -1,6 +1,4 @@
-import com.gradle.publish.PublishPlugin
 import com.gradle.publish.PublishTask
-import com.toasttab.gradle.testkit.shared.RepositoryDescriptor
 import com.toasttab.gradle.testkit.shared.configureIntegrationPublishing
 import com.toasttab.gradle.testkit.shared.publishOnlyIf
 
@@ -32,10 +30,6 @@ tasks {
     test {
         systemProperty("testkit-plugin-version", "$version")
         systemProperty("testkit-integration-repo", layout.buildDirectory.dir("testkit-integration-repo").get().asFile.path)
-
-        reports {
-            junitXml.required = true
-        }
     }
 }
 
