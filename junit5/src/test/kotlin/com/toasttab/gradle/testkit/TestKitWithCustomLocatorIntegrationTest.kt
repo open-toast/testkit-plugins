@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Toast Inc.
+ * Copyright (c) 2025 Toast Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,14 +15,16 @@
 
 package com.toasttab.gradle.testkit
 
-import org.gradle.api.provider.MapProperty
-import org.gradle.api.provider.Property
+import org.junit.jupiter.api.Test
+import strikt.api.expectThat
+import strikt.assertions.contains
 
-abstract class TestkitExtension {
-    abstract val testProjectsDir: Property<String>
-    abstract val replaceTokens: MapProperty<String, String>
-
-    fun replaceToken(name: String, value: String) {
-        replaceTokens.put(name, value)
+@TestKit(locator = FullyQualifiedNameProjectLocator::class)
+class TestKitWithCustomLocatorIntegrationTest {
+    @Test
+    fun `basic project`(project: TestProject) {
+        expectThat(
+            project.build("dependencies").output
+        ).contains("compileClasspath")
     }
 }

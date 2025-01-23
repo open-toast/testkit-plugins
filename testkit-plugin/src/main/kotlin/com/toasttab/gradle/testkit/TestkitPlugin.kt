@@ -41,17 +41,20 @@ class TestkitPlugin @Inject constructor(
         val testProjectDir = project.layout.buildDirectory.dir("test-projects")
 
         project.tasks.register<Copy>("copyTestProjects") {
-            from(extension.testProjectsDir)
+            from(extension.testProjectsDir.getOrElse("src/test/projects"))
             into(testProjectDir)
 
+            val tokens = mapOf(
+                "TESTKIT_PLUGIN_VERSION" to BuildConfig.VERSION,
+                "TESTKIT_INTEGRATION_REPO" to project.integrationDirectory().path,
+                "VERSION" to "${project.version}"
+            ) + extension.replaceTokens.get()
+
+            // default up-to-date checks ignore the tokens
+            inputs.property("tokens", tokens)
+
             filter<ReplaceTokens>(
-                mapOf(
-                    "tokens" to mapOf(
-                        "TESTKIT_PLUGIN_VERSION" to BuildConfig.VERSION,
-                        "TESTKIT_INTEGRATION_REPO" to project.integrationDirectory().path,
-                        "VERSION" to "${project.version}"
-                    ) + extension.replaceTokens
-                )
+                mapOf("tokens" to tokens)
             )
         }
 

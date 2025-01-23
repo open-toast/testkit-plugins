@@ -27,3 +27,8 @@ class SimpleNameProjectLocator : ProjectLocator {
     override fun projectPath(root: String, context: ExtensionContext) =
         Path(root, context.requiredTestClass.simpleName, context.requiredTestMethod.name)
 }
+
+class FullyQualifiedNameProjectLocator : ProjectLocator {
+    override fun projectPath(root: String, context: ExtensionContext) =
+        Path(root, context.requiredTestClass.name.replace('.', '/'), context.requiredTestMethod.name)
+}
