@@ -27,13 +27,16 @@ dependencies {
 }
 ```
 
-Each test method is expected to have a corresponding test project located at `src/test/projects/<<Test>>/<<method>>`.
+Each test method is expected to have a corresponding test project located, by default, at `src/test/projects/<<Test>>/<<method>>`.
 
 ```shell
 src/test/projects/MyTest/sometest:
    build.gradle.kts
    settings.gradle.kts # optional, but IntelliJ will complain
 ```
+
+The location of the test project is can be customized by specifying a custom `ProjectLocator` implementation
+via the `@TestKit` annotation on the test class (e.g. `FullyQualifiedNameProjectLocator`).
 
 Test project files may contain Ant-style placeholders. The predefined placeholders are:
 
@@ -86,7 +89,7 @@ class ParameterizedTest {
 This plugin does not use the TestKit's plugin classpath injection mechanism because the mechanism breaks
 in certain scenarios, e.g. when plugins depend on other plugins. Instead, this plugin installs
 the plugin under test and its sibling dependencies, optionally preinstrumented for Jacoco code coverage,
-into an integration repository on disk, an technique borrowed from [DAGP](https://github.com/autonomousapps/dependency-analysis-gradle-plugin). 
+into an integration repository on disk, a technique borrowed from [DAGP](https://github.com/autonomousapps/dependency-analysis-gradle-plugin). 
 
 The integration repository is then injected into the plugin management repositories via a custom init
 script which is generated on the fly.
@@ -107,7 +110,7 @@ classes on the fly.
 * The jacoco plugin applied to the TestKit project ensures that the coverage is fully flushed after the test finishes. 
   This ensures that the coverage is recorded even though the TestKit process might still be lingering.
 
-See
+For more context, see
 
 * https://github.com/gradle/gradle/issues/1465
 * https://github.com/gradle/gradle/issues/12535
