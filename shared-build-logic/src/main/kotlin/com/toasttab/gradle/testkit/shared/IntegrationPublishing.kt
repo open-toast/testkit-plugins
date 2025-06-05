@@ -168,10 +168,10 @@ private fun Project.configureIntegrationPublishingForDependency(project: Project
         val extension = project.extensions.findByType<GradlePluginDevelopmentExtension>()
 
         if (extension == null) {
-            logger.warn("No GradlePluginDevelopmentExtension found for project ${project.path}")
+            logger.debug("${project.path} is not a plugin project")
         } else {
             if (extension.plugins.isEmpty()) {
-                logger.warn("No plugins are declared in project ${project.path}")
+                logger.warn("${project.path} is a plugin project without any plugins defined")
             } else {
                 for (plugin in extension.plugins) {
                     dependsOn("${project.path}:${plugin.publishTask(repo)}")
