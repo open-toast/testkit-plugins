@@ -7,7 +7,6 @@ plugins {
 
 dependencies {
     implementation(gradleApi())
-    testImplementation(libs.strikt.core)
 }
 
 sourceSets {
@@ -25,7 +24,6 @@ buildConfig {
 
 tasks {
     test {
-        useJUnitPlatform()
         systemProperty("test-projects", layout.projectDirectory.dir("src/test/test-projects").asFile.path)
     }
 }
