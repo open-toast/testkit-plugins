@@ -8,6 +8,7 @@ if (isRelease()) {
             sonatype {
                 username = Remote.username
                 password = Remote.password
+                nexusUrl.set(uri("https://ossrh-staging-api.central.sonatype.com/service/local/"))
             }
         }
     }
