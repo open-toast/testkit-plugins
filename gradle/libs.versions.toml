@@ -3,7 +3,7 @@ kotlin = "2.3.0"
 
 nexus = "2.0.0"
 ktlint = "0.50.0"
-spotless = "6.21.0"
+spotless = "8.2.1"
 
 jacoco = "0.8.14"
 
