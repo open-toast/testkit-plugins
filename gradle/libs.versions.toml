@@ -26,5 +26,5 @@ junit-runtime = { module = "org.junit.platform:junit-platform-launcher" }
 strikt-core = { module = "io.strikt:strikt-core", version.ref = "strikt" }
 
 [plugins]
-gradle-publish = { id = "com.gradle.plugin-publish", version = "2.0.0" }
+gradle-publish = { id = "com.gradle.plugin-publish", version = "2.1.0" }
 build-config = { id = "com.github.gmazzo.buildconfig", version = "6.0.7" }
