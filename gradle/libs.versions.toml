@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.3.0"
+kotlin = "2.3.10"
 
 nexus = "2.0.0"
 ktlint = "0.50.0"
