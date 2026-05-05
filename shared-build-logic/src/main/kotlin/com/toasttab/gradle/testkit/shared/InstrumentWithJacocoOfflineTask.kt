@@ -16,39 +16,73 @@
 package com.toasttab.gradle.testkit.shared
 
 import org.gradle.api.DefaultTask
-import org.gradle.api.artifacts.Configuration
-import org.gradle.api.file.Directory
-import org.gradle.api.file.RegularFile
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
-import org.gradle.kotlin.dsl.withGroovyBuilder
+import org.gradle.workers.WorkAction
+import org.gradle.workers.WorkParameters
+import org.gradle.workers.WorkerExecutor
+import java.io.FileOutputStream
+import javax.inject.Inject
 
 abstract class InstrumentWithJacocoOfflineTask : DefaultTask() {
-    @InputFiles
-    lateinit var classpath: Configuration
+    @get:Classpath
+    abstract val classpath: ConfigurableFileCollection
 
-    @InputFile
-    lateinit var jar: Provider<RegularFile>
+    @get:InputFile
+    abstract val jar: RegularFileProperty
 
-    @OutputDirectory
-    lateinit var dir: Provider<Directory>
+    @get:OutputDirectory
+    abstract val dir: DirectoryProperty
+
+    @get:Inject
+    abstract val workerExecutor: WorkerExecutor
 
     @TaskAction
     fun instrument() {
-        val file = jar.get().asFile
+        workerExecutor.classLoaderIsolation {
+            classpath.from(this@InstrumentWithJacocoOfflineTask.classpath)
+        }.submit(InstrumentAction::class.java) {
+            inputJar.set(jar)
+            outputDir.set(dir)
+        }
+    }
 
-        project.ant.withGroovyBuilder {
-            "taskdef"(
-                "name" to "instrument",
-                "classname" to "org.jacoco.ant.InstrumentTask",
-                "classpath" to classpath.asPath
+    interface InstrumentParameters : WorkParameters {
+        val inputJar: RegularFileProperty
+        val outputDir: DirectoryProperty
+    }
+
+    abstract class InstrumentAction : WorkAction<InstrumentParameters> {
+        override fun execute() {
+            val inputJar = parameters.inputJar.get().asFile
+            val outputJar = parameters.outputDir.get().file(inputJar.name).asFile
+
+            outputJar.parentFile.mkdirs()
+
+            val instrumenterClass = Class.forName("org.jacoco.core.instr.Instrumenter")
+            val generatorClass = Class.forName("org.jacoco.core.runtime.IExecutionDataAccessorGenerator")
+            val offlineGeneratorClass = Class.forName("org.jacoco.core.runtime.OfflineInstrumentationAccessGenerator")
+
+            val instrumenter = instrumenterClass
+                .getConstructor(generatorClass)
+                .newInstance(offlineGeneratorClass.getConstructor().newInstance())
+
+            val instrumentAll = instrumenterClass.getMethod(
+                "instrumentAll",
+                java.io.InputStream::class.java,
+                java.io.OutputStream::class.java,
+                String::class.java
             )
-            "instrument"("destdir" to dir.get().asFile.path) {
-                "fileset"("dir" to file.parent, "includes" to file.name)
+
+            inputJar.inputStream().buffered().use { input ->
+                FileOutputStream(outputJar).buffered().use { output ->
+                    instrumentAll.invoke(instrumenter, input, output, inputJar.name)
+                }
             }
         }
     }

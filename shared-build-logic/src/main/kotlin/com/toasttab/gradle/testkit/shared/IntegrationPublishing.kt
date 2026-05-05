@@ -120,11 +120,11 @@ private fun Project.configureIntegrationPublishingForDependency(project: Project
         project.tasks.register<InstrumentWithJacocoOfflineTask>("instrument") {
             dependsOn("jar")
 
-            classpath = coverage.configuration
+            classpath.from(coverage.configuration)
 
-            jar = project.tasks.named<Jar>("jar").flatMap { it.archiveFile }
+            jar.set(project.tasks.named<Jar>("jar").flatMap { it.archiveFile })
 
-            dir = project.layout.buildDirectory.dir("instrumented")
+            dir.set(project.layout.buildDirectory.dir("instrumented"))
         }
     }
 
