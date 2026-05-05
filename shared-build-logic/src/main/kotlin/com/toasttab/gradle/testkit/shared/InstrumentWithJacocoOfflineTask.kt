@@ -19,6 +19,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputDirectory
@@ -29,11 +30,13 @@ import org.gradle.workers.WorkerExecutor
 import java.io.FileOutputStream
 import javax.inject.Inject
 
+@CacheableTask
 abstract class InstrumentWithJacocoOfflineTask : DefaultTask() {
     @get:Classpath
     abstract val classpath: ConfigurableFileCollection
 
     @get:InputFile
+    @get:Classpath
     abstract val jar: RegularFileProperty
 
     @get:OutputDirectory
