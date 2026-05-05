@@ -22,7 +22,7 @@ val Project.libs get() = the<org.gradle.accessors.dm.LibrariesForLibs>()
 
 object Pgp {
     val key by lazy {
-        System.getenv("PGP_KEY")
+        System.getenv("PGP_KEY")?.replace('$', '\n')
     }
 
     val password by lazy {
