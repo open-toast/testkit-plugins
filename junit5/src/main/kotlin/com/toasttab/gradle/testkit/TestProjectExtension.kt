@@ -42,9 +42,10 @@ private const val LOCATOR = "locator"
 private const val PROJECTS = "PROJECTS"
 
 data class ProjectKey(
-    val gradleVersion: String?
+    val gradleVersion: String?,
+    val properties: Map<String, String> = emptyMap()
 ) {
-    constructor(gradleVersion: GradleVersionArgument) : this(gradleVersion.version)
+    constructor(gradleVersion: GradleVersionArgument) : this(gradleVersion.version, gradleVersion.properties)
 }
 
 class TestProjects : CloseableResource {
@@ -87,16 +88,16 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
 
     override fun provideArguments(context: ExtensionContext): Stream<out Arguments> {
         val methodAnn = context.requiredTestMethod.getAnnotation(ParameterizedWithGradleVersions::class.java)
+        val classAnn = context.requiredTestClass.getAnnotation(TestKit::class.java)
 
-        val versions = if (methodAnn.value.isNotEmpty()) {
-            methodAnn.value
-        } else {
-            context.requiredTestClass.getAnnotation(TestKit::class.java).gradleVersions
+        val specs: List<GradleVersionArgument> = when {
+            methodAnn.versions.isNotEmpty() -> methodAnn.versions.map(GradleVersionArgument::of)
+            methodAnn.value.isNotEmpty() -> methodAnn.value.map { GradleVersionArgument.of(it) }
+            classAnn.versions.isNotEmpty() -> classAnn.versions.map(GradleVersionArgument::of)
+            else -> classAnn.gradleVersions.map { GradleVersionArgument.of(it) }
         }
 
-        return versions.map {
-            Arguments.of(context.project(GradleVersionArgument.of(it)))
-        }.stream()
+        return specs.map { Arguments.of(context.project(it)) }.stream()
     }
 
     companion object {

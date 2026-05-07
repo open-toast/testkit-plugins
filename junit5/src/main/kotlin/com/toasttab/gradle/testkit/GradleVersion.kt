@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 Toast Inc.
+ * Copyright (c) 2026 Toast Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,12 +15,11 @@
 
 package com.toasttab.gradle.testkit
 
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ArgumentsSource
-
-@ArgumentsSource(TestProjectExtension::class)
-@ParameterizedTest
-annotation class ParameterizedWithGradleVersions(
-    val value: Array<String> = [],
-    val versions: Array<GradleVersion> = []
+@Retention(AnnotationRetention.RUNTIME)
+annotation class GradleVersion(
+    val version: String,
+    val properties: Array<Property> = []
 )
+
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Property(val key: String, val value: String)

@@ -26,5 +26,6 @@ import kotlin.reflect.KClass
 annotation class TestKit(
     val locator: KClass<out ProjectLocator> = SimpleNameProjectLocator::class,
     val gradleVersions: Array<String> = [],
+    val versions: Array<GradleVersion> = [],
     val cleanup: Boolean = true
 )
