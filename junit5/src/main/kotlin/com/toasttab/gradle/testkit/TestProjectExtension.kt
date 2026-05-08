@@ -99,6 +99,7 @@ class TestProjectExtension :
         }
     }
 
+    @Suppress("DEPRECATION")
     override fun provideArguments(context: ExtensionContext): Stream<out Arguments> {
         val methodAnn = context.requiredTestMethod.getAnnotation(ParameterizedWithGradleVersions::class.java)
         val classAnn = context.requiredTestClass.getAnnotation(TestKit::class.java)

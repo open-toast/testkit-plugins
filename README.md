@@ -68,12 +68,12 @@ class MyTest {
 ## Parameterized Gradle versions
 
 To run a test against multiple versions of Gradle, use the `@ParameterizedWithGradleVersions` annotation.
-Gradle versions can be specified per class in the `@TestKit` annotation or per method in the 
-`@ParameterizedWithGradleVersions` annotation. Each gradle version argument will be automatically 
-injected into the runner created via `TestProject.createRunner`.
+Gradle versions can be specified per class via the `versions` element of the `@TestKit` annotation or per
+method via the `versions` element of the `@ParameterizedWithGradleVersions` annotation. Each gradle version
+argument will be automatically injected into the runner created via `TestProject.createRunner`.
 
 ```kotlin
-@TestKit(gradleVersions = ["8.6", "8.7"])
+@TestKit(versions = [GradleVersion("8.6"), GradleVersion("8.7")])
 class ParameterizedTest {
     @ParameterizedWithGradleVersions
     fun sometest(project: TestProject) {
@@ -83,6 +83,33 @@ class ParameterizedTest {
     }
 }
 ```
+
+### Per-version properties
+
+Each `@GradleVersion` can carry arbitrary key/value metadata via `@Property`. This is useful when a given
+Gradle version needs to be paired with other version-specific values (e.g. a matching Kotlin version) that
+the test body — or the test project's build files — needs to consume.
+
+```kotlin
+@TestKit(versions = [
+    GradleVersion(version = "8.6", properties = [Property(key = "kotlin", value = "1.9.24")]),
+    GradleVersion(version = "8.7", properties = [Property(key = "kotlin", value = "2.0.0")])
+])
+class ParameterizedTest {
+    @ParameterizedWithGradleVersions
+    fun sometest(project: TestProject) {
+        val kotlin = project.property("kotlin")
+        // use `kotlin` to template the build file, pick a plugin version, etc.
+    }
+}
+```
+
+Properties also appear in the JUnit display name, e.g. `project(gradle: 8.6 [kotlin=1.9.24])`.
+
+> The legacy `gradleVersions: Array<String>` element on `@TestKit` and the `value: Array<String>` element on
+> `@ParameterizedWithGradleVersions` are still supported for backward compatibility, but `versions` is
+> preferred. Resolution priority is: method `versions` → method `value` → class `versions` → class
+> `gradleVersions`.
 
 ## Integration repository
 

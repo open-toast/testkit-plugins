@@ -21,6 +21,7 @@ import org.junit.jupiter.params.provider.ArgumentsSource
 @ArgumentsSource(TestProjectExtension::class)
 @ParameterizedTest
 annotation class ParameterizedWithGradleVersions(
+    @Deprecated("Use versions instead.", ReplaceWith("versions"))
     val value: Array<String> = [],
     val versions: Array<GradleVersion> = []
 )
