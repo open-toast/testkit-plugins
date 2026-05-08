@@ -33,34 +33,35 @@ private class ReaderTask(
     private val readingSession = AtomicBoolean(false)
     private val running = AtomicBoolean(true)
 
-    private val reader = object : RemoteControlReader(sock.getInputStream()) {
-        init {
-            setSessionInfoVisitor { s ->
-                readingSession.set(true)
-            }
+    private val reader =
+        object : RemoteControlReader(sock.getInputStream()) {
+            init {
+                setSessionInfoVisitor { s ->
+                    readingSession.set(true)
+                }
 
-            setExecutionDataVisitor { ex ->
-                synchronized(writer) {
-                    writer.visitClassExecution(ex)
+                setExecutionDataVisitor { ex ->
+                    synchronized(writer) {
+                        writer.visitClassExecution(ex)
+                    }
                 }
             }
-        }
 
-        override fun readBlock(blockid: Byte): Boolean {
-            if (blockid == 32.toByte()) {
-                // OK message which follows jacoco tcpclient dumping execution data
-                finishSession()
+            override fun readBlock(blockid: Byte): Boolean {
+                if (blockid == 32.toByte()) {
+                    // OK message which follows jacoco tcpclient dumping execution data
+                    finishSession()
+                }
+                return super.readBlock(blockid)
             }
-            return super.readBlock(blockid)
-        }
 
-        override fun read() =
-            try {
-                super.read()
-            } catch (e: Exception) {
-                false
-            }
-    }
+            override fun read() =
+                try {
+                    super.read()
+                } catch (e: Exception) {
+                    false
+                }
+        }
 
     init {
         start()
@@ -103,21 +104,23 @@ class CoverageRecorder(
 
     private val tasks = mutableListOf<ReaderTask>()
 
-    private val runner = thread {
-        while (!server.isClosed) {
-            val sock = try {
-                server.accept()
-            } catch (e: Exception) {
-                break
+    private val runner =
+        thread {
+            while (!server.isClosed) {
+                val sock =
+                    try {
+                        server.accept()
+                    } catch (e: Exception) {
+                        break
+                    }
+
+                tasks.add(ReaderTask(sock, writer))
             }
 
-            tasks.add(ReaderTask(sock, writer))
+            for (task in tasks) {
+                task.done()
+            }
         }
-
-        for (task in tasks) {
-            task.done()
-        }
-    }
 
     val port: Int get() = server.localPort
 

@@ -22,4 +22,7 @@ annotation class GradleVersion(
 )
 
 @Retention(AnnotationRetention.RUNTIME)
-annotation class Property(val key: String, val value: String)
+annotation class Property(
+    val key: String,
+    val value: String
+)

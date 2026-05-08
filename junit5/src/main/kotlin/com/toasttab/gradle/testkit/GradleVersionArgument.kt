@@ -21,18 +21,20 @@ class GradleVersionArgument private constructor(
 ) {
     fun property(key: String): String? = properties[key]
 
-    override fun toString() = when {
-        version == null -> "default"
-        properties.isEmpty() -> version
-        else -> "$version${properties.entries.joinToString(prefix = " [", postfix = "]") { "${it.key}=${it.value}" }}"
-    }
+    override fun toString() =
+        when {
+            version == null -> "default"
+            properties.isEmpty() -> version
+            else -> "$version${properties.entries.joinToString(prefix = " [", postfix = "]") { "${it.key}=${it.value}" }}"
+        }
 
     companion object {
-        fun of(version: String, properties: Map<String, String> = emptyMap()) =
-            GradleVersionArgument(version, properties)
+        fun of(
+            version: String,
+            properties: Map<String, String> = emptyMap()
+        ) = GradleVersionArgument(version, properties)
 
-        fun of(spec: GradleVersion) =
-            GradleVersionArgument(spec.version, spec.properties.associate { it.key to it.value })
+        fun of(spec: GradleVersion) = GradleVersionArgument(spec.version, spec.properties.associate { it.key to it.value })
 
         val DEFAULT = GradleVersionArgument(null)
     }

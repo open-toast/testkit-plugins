@@ -32,69 +32,74 @@ import org.gradle.kotlin.dsl.register
 import org.gradle.testing.jacoco.tasks.JacocoReportBase
 import javax.inject.Inject
 
-class TestkitPlugin @Inject constructor(
-    private val fs: FileSystemOperations
-) : Plugin<Project> {
-    override fun apply(project: Project) {
-        val extension = project.extensions.create<TestkitExtension>("testkitTests")
-        val destfile = project.layout.buildDirectory.file("jacoco/testkit.exec")
-        val testProjectDir = project.layout.buildDirectory.dir("test-projects")
+class TestkitPlugin
+    @Inject
+    constructor(
+        private val fs: FileSystemOperations
+    ) : Plugin<Project> {
+        override fun apply(project: Project) {
+            val extension = project.extensions.create<TestkitExtension>("testkitTests")
+            val destfile = project.layout.buildDirectory.file("jacoco/testkit.exec")
+            val testProjectDir = project.layout.buildDirectory.dir("test-projects")
 
-        project.tasks.register<Copy>("copyTestProjects") {
-            from(extension.testProjectsDir.getOrElse("src/test/projects"))
-            into(testProjectDir)
+            project.tasks.register<Copy>("copyTestProjects") {
+                from(extension.testProjectsDir.getOrElse("src/test/projects"))
+                into(testProjectDir)
 
-            val tokens = mapOf(
-                "TESTKIT_PLUGIN_VERSION" to BuildConfig.VERSION,
-                "TESTKIT_INTEGRATION_REPO" to project.integrationDirectory().path,
-                "VERSION" to "${project.version}"
-            ) + extension.replaceTokens.get()
+                val tokens =
+                    mapOf(
+                        "TESTKIT_PLUGIN_VERSION" to BuildConfig.VERSION,
+                        "TESTKIT_INTEGRATION_REPO" to project.integrationDirectory().path,
+                        "VERSION" to "${project.version}"
+                    ) + extension.replaceTokens.get()
 
-            // default up-to-date checks ignore the tokens
-            inputs.property("tokens", tokens)
+                // default up-to-date checks ignore the tokens
+                inputs.property("tokens", tokens)
 
-            filter<ReplaceTokens>(
-                mapOf("tokens" to tokens)
-            )
-        }
-
-        project.tasks.named<Test>("test") {
-            dependsOn("copyTestProjects")
-
-            doFirst(JacocoOutputCleanupTestTaskAction(fs, destfile))
-
-            inputs.dir(testProjectDir).withPropertyName("testkit-projects-input")
-                .withPathSensitivity(PathSensitivity.RELATIVE)
-
-            // declare an additional jacoco output file so that the JUnit JVM and the TestKit JVM
-            // do not try to write to the same file
-            outputs.file(destfile).withPropertyName("testkit-coverage-output")
-
-            systemProperty("testkit-coverage-output", "${destfile.get()}")
-            systemProperty("testkit-projects", "${testProjectDir.get()}")
-            systemProperty("testkit-integration-repo", project.integrationDirectory().path)
-            systemProperty("testkit-plugin-version", BuildConfig.VERSION)
-        }
-
-        project.configureIntegrationPublishing()
-
-        project.pluginManager.withPlugin("jacoco") {
-            project.pluginManager.withPlugin("jvm-test-suite") {
-                // add the TestKit jacoco file to outgoing artifacts so that it can be aggregated
-                project.configurations.getAt("coverageDataElementsForTest").outgoing.artifact(destfile) {
-                    type = ArtifactTypeDefinition.BINARY_DATA_TYPE
-                    builtBy("test")
-                }
+                filter<ReplaceTokens>(
+                    mapOf("tokens" to tokens)
+                )
             }
 
-            project.tasks.named<JacocoReportBase>("jacocoTestReport") {
-                // add the TestKit jacoco file to the local jacoco report
-                executionData.from(
-                    project.layout.buildDirectory.dir("jacoco").map {
-                        it.files("test.exec", "testkit.exec")
+            project.tasks.named<Test>("test") {
+                dependsOn("copyTestProjects")
+
+                doFirst(JacocoOutputCleanupTestTaskAction(fs, destfile))
+
+                inputs
+                    .dir(testProjectDir)
+                    .withPropertyName("testkit-projects-input")
+                    .withPathSensitivity(PathSensitivity.RELATIVE)
+
+                // declare an additional jacoco output file so that the JUnit JVM and the TestKit JVM
+                // do not try to write to the same file
+                outputs.file(destfile).withPropertyName("testkit-coverage-output")
+
+                systemProperty("testkit-coverage-output", "${destfile.get()}")
+                systemProperty("testkit-projects", "${testProjectDir.get()}")
+                systemProperty("testkit-integration-repo", project.integrationDirectory().path)
+                systemProperty("testkit-plugin-version", BuildConfig.VERSION)
+            }
+
+            project.configureIntegrationPublishing()
+
+            project.pluginManager.withPlugin("jacoco") {
+                project.pluginManager.withPlugin("jvm-test-suite") {
+                    // add the TestKit jacoco file to outgoing artifacts so that it can be aggregated
+                    project.configurations.getAt("coverageDataElementsForTest").outgoing.artifact(destfile) {
+                        type = ArtifactTypeDefinition.BINARY_DATA_TYPE
+                        builtBy("test")
                     }
-                )
+                }
+
+                project.tasks.named<JacocoReportBase>("jacocoTestReport") {
+                    // add the TestKit jacoco file to the local jacoco report
+                    executionData.from(
+                        project.layout.buildDirectory.dir("jacoco").map {
+                            it.files("test.exec", "testkit.exec")
+                        }
+                    )
+                }
             }
         }
     }
-}

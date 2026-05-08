@@ -26,7 +26,7 @@ import org.junit.jupiter.api.extension.ParameterResolver
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
 import java.nio.file.Path
-import java.util.*
+import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 import kotlin.io.path.ExperimentalPathApi
@@ -51,7 +51,10 @@ data class ProjectKey(
 class TestProjects : CloseableResource {
     private val projects = ConcurrentHashMap<ProjectKey, TestProject>()
 
-    fun project(key: ProjectKey, create: (ProjectKey) -> TestProject) = projects.computeIfAbsent(key, create)
+    fun project(
+        key: ProjectKey,
+        create: (ProjectKey) -> TestProject
+    ) = projects.computeIfAbsent(key, create)
 
     override fun close() {
         projects.values.forEach(TestProject::close)
@@ -62,7 +65,12 @@ class TestProjects : CloseableResource {
     }
 }
 
-class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExecutionCallback, InvocationInterceptor, ArgumentsProvider {
+class TestProjectExtension :
+    ParameterResolver,
+    BeforeAllCallback,
+    AfterTestExecutionCallback,
+    InvocationInterceptor,
+    ArgumentsProvider {
     override fun beforeAll(context: ExtensionContext) {
         val coverage = CoverageSettings.settings
 
@@ -71,12 +79,17 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
         }
     }
 
-    override fun supportsParameter(parameterContext: ParameterContext, extensionContext: ExtensionContext) =
-        parameterContext.parameter.type == TestProject::class.java &&
-            extensionContext.parent.map { it::class.java.name } != Optional.of("org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext")
+    override fun supportsParameter(
+        parameterContext: ParameterContext,
+        extensionContext: ExtensionContext
+    ) = parameterContext.parameter.type == TestProject::class.java &&
+        extensionContext.parent.map { it::class.java.name } !=
+        Optional.of("org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext")
 
-    override fun resolveParameter(parameterContext: ParameterContext, extensionContext: ExtensionContext) =
-        extensionContext.project(GradleVersionArgument.DEFAULT)
+    override fun resolveParameter(
+        parameterContext: ParameterContext,
+        extensionContext: ExtensionContext
+    ) = extensionContext.project(GradleVersionArgument.DEFAULT)
 
     override fun afterTestExecution(context: ExtensionContext) {
         context.executionException.ifPresent {
@@ -90,98 +103,114 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
         val methodAnn = context.requiredTestMethod.getAnnotation(ParameterizedWithGradleVersions::class.java)
         val classAnn = context.requiredTestClass.getAnnotation(TestKit::class.java)
 
-        val specs: List<GradleVersionArgument> = when {
-            methodAnn.versions.isNotEmpty() -> methodAnn.versions.map(GradleVersionArgument::of)
-            methodAnn.value.isNotEmpty() -> methodAnn.value.map { GradleVersionArgument.of(it) }
-            classAnn.versions.isNotEmpty() -> classAnn.versions.map(GradleVersionArgument::of)
-            else -> classAnn.gradleVersions.map { GradleVersionArgument.of(it) }
-        }
+        val specs: List<GradleVersionArgument> =
+            when {
+                methodAnn.versions.isNotEmpty() -> methodAnn.versions.map(GradleVersionArgument::of)
+                methodAnn.value.isNotEmpty() -> methodAnn.value.map { GradleVersionArgument.of(it) }
+                classAnn.versions.isNotEmpty() -> classAnn.versions.map(GradleVersionArgument::of)
+                else -> classAnn.gradleVersions.map { GradleVersionArgument.of(it) }
+            }
 
         return specs.map { Arguments.of(context.project(it)) }.stream()
     }
 
     companion object {
-        private inline fun <reified T> ExtensionContext.get(namespace: ExtensionContext.Namespace, key: String) =
-            getStore(namespace).get(key, T::class.java)
+        private inline fun <reified T> ExtensionContext.get(
+            namespace: ExtensionContext.Namespace,
+            key: String
+        ) = getStore(namespace).get(key, T::class.java)
 
-        private inline fun <K, reified V> ExtensionContext.Store.cache(key: K, noinline f: (K) -> V) =
-            getOrComputeIfAbsent(key, f, V::class.java)
+        private inline fun <K, reified V> ExtensionContext.Store.cache(
+            key: K,
+            noinline f: (K) -> V
+        ) = getOrComputeIfAbsent(key, f, V::class.java)
 
         @OptIn(ExperimentalPathApi::class)
         private fun ExtensionContext.project(gradleVersion: GradleVersionArgument): TestProject {
             val parameters = requiredTestClass.getAnnotation(TestKit::class.java) ?: TestKit()
 
-            val locator = getStore(NAMESPACE).cache(LOCATOR) {
-                parameters.locator.java.getDeclaredConstructor().newInstance() as ProjectLocator
-            }
-
-            return getStore(NAMESPACE).cache(PROJECTS) {
-                TestProjects()
-            }.project(ProjectKey(gradleVersion)) {
-                val tempProjectDir = createTempDirectory("junit-gradlekit")
-
-                val location = locator.projectPath(System.getProperty("testkit-projects"), this)
-
-                if (!location.exists()) {
-                    error { "expected a test project in $location" }
+            val locator =
+                getStore(NAMESPACE).cache(LOCATOR) {
+                    parameters.locator.java
+                        .getDeclaredConstructor()
+                        .newInstance() as ProjectLocator
                 }
 
-                location.copyToRecursively(target = tempProjectDir, followLinks = false, overwrite = false)
+            return getStore(NAMESPACE)
+                .cache(PROJECTS) {
+                    TestProjects()
+                }.project(ProjectKey(gradleVersion)) {
+                    val tempProjectDir = createTempDirectory("junit-gradlekit")
 
-                createProject(
-                    tempProjectDir,
-                    gradleVersion,
-                    parameters.cleanup,
-                    CoverageSettings.settings?.let { get(NAMESPACE, COVERAGE_RECORDER) }
-                )
-            }
+                    val location = locator.projectPath(System.getProperty("testkit-projects"), this)
+
+                    if (!location.exists()) {
+                        error { "expected a test project in $location" }
+                    }
+
+                    location.copyToRecursively(target = tempProjectDir, followLinks = false, overwrite = false)
+
+                    createProject(
+                        tempProjectDir,
+                        gradleVersion,
+                        parameters.cleanup,
+                        CoverageSettings.settings?.let { get(NAMESPACE, COVERAGE_RECORDER) }
+                    )
+                }
         }
 
-        fun createProject(projectDir: Path, gradleVersion: GradleVersionArgument, cleanup: Boolean = true, coverageRecorder: CoverageRecorder?): TestProject {
+        fun createProject(
+            projectDir: Path,
+            gradleVersion: GradleVersionArgument,
+            cleanup: Boolean = true,
+            coverageRecorder: CoverageRecorder?
+        ): TestProject {
             val integrationRepo = System.getProperty("testkit-integration-repo")
             val projectVersion = System.getProperty("testkit-project-version")
             val pluginVersion = System.getProperty("testkit-plugin-version")
-            val plugins = System.getProperty("testkit-plugin-ids")?.split(',')?.joinToString(separator = "\n") {
-                """id("$it") version("$projectVersion")"""
-            } ?: ""
+            val plugins =
+                System.getProperty("testkit-plugin-ids")?.split(',')?.joinToString(separator = "\n") {
+                    """id("$it") version("$projectVersion")"""
+                } ?: ""
 
-            val initArgs = if (integrationRepo != null) {
-                projectDir.appendToFile(
-                    "init.gradle.kts",
-                    """
-    
-                    settingsEvaluated {
-                        pluginManagement {
-                            repositories {
-                                maven(url = "file://$integrationRepo")
-                                gradlePluginPortal()
-                            }
-                            
-                            plugins {
-                                id("com.toasttab.testkit.coverage") version("$pluginVersion")
-                                $plugins
+            val initArgs =
+                if (integrationRepo != null) {
+                    projectDir.appendToFile(
+                        "init.gradle.kts",
+                        """
+                        
+                        settingsEvaluated {
+                            pluginManagement {
+                                repositories {
+                                    maven(url = "file://$integrationRepo")
+                                    gradlePluginPortal()
+                                }
+                                
+                                plugins {
+                                    id("com.toasttab.testkit.coverage") version("$pluginVersion")
+                                    $plugins
+                                }
                             }
                         }
-                    }
-                    """.trimIndent()
-                )
+                        """.trimIndent()
+                    )
 
-                listOf("--init-script", "init.gradle.kts")
-            } else {
-                emptyList()
-            }
+                    listOf("--init-script", "init.gradle.kts")
+                } else {
+                    emptyList()
+                }
 
             if (coverageRecorder != null) {
                 projectDir.appendToFile(
                     "gradle.properties",
                     """
-                            
-                            # custom jacoco properties
-                            systemProp.jacoco-agent.output=tcpclient
-                            systemProp.jacoco-agent.port=${coverageRecorder.port}
-                            systemProp.jacoco-agent.sessionid=test
-                            systemProp.jacoco-agent.includes=${coverageRecorder.settings.includes}
-                            systemProp.jacoco-agent.excludes=${coverageRecorder.settings.excludes}
+                    
+                    # custom jacoco properties
+                    systemProp.jacoco-agent.output=tcpclient
+                    systemProp.jacoco-agent.port=${coverageRecorder.port}
+                    systemProp.jacoco-agent.sessionid=test
+                    systemProp.jacoco-agent.includes=${coverageRecorder.settings.includes}
+                    systemProp.jacoco-agent.excludes=${coverageRecorder.settings.excludes}
                     """.trimIndent()
                 )
             }
@@ -191,7 +220,10 @@ class TestProjectExtension : ParameterResolver, BeforeAllCallback, AfterTestExec
     }
 }
 
-private fun Path.appendToFile(fileName: String, text: String) {
+private fun Path.appendToFile(
+    fileName: String,
+    text: String
+) {
     val file = resolve(fileName)
 
     if (!file.exists()) {

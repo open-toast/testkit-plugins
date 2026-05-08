@@ -23,13 +23,15 @@ import org.gradle.api.flow.FlowParameters
 import org.gradle.api.flow.FlowScope
 import javax.inject.Inject
 
-class FlushJacocoPlugin @Inject constructor(
-    private val flowScope: FlowScope
-) : Plugin<Project> {
-    override fun apply(target: Project) {
-        flowScope.always(DumpAction::class.java) { }
+class FlushJacocoPlugin
+    @Inject
+    constructor(
+        private val flowScope: FlowScope
+    ) : Plugin<Project> {
+        override fun apply(target: Project) {
+            flowScope.always(DumpAction::class.java) { }
+        }
     }
-}
 
 class DumpAction : FlowAction<FlowParameters.None> {
     override fun execute(parameters: FlowParameters.None) {

@@ -19,10 +19,14 @@ import org.junit.jupiter.api.DisplayNameGenerator.Standard
 import java.lang.reflect.Method
 
 class TestKitDisplayNameGenerator : Standard() {
-    override fun generateDisplayNameForMethod(cls: Class<*>, method: Method) =
-        method.name + method.parameterTypes.filter {
-            it != TestProject::class.java
-        }.joinToString(", ", prefix = "(", postfix = ")") {
-            it.simpleName
-        }
+    override fun generateDisplayNameForMethod(
+        cls: Class<*>,
+        method: Method
+    ) = method.name +
+        method.parameterTypes
+            .filter {
+                it != TestProject::class.java
+            }.joinToString(", ", prefix = "(", postfix = ")") {
+                it.simpleName
+            }
 }
