@@ -20,15 +20,22 @@ import java.nio.file.Path
 import kotlin.io.path.Path
 
 interface ProjectLocator {
-    fun projectPath(root: String, context: ExtensionContext): Path
+    fun projectPath(
+        root: String,
+        context: ExtensionContext
+    ): Path
 }
 
 class SimpleNameProjectLocator : ProjectLocator {
-    override fun projectPath(root: String, context: ExtensionContext) =
-        Path(root, context.requiredTestClass.simpleName, context.requiredTestMethod.name)
+    override fun projectPath(
+        root: String,
+        context: ExtensionContext
+    ) = Path(root, context.requiredTestClass.simpleName, context.requiredTestMethod.name)
 }
 
 class FullyQualifiedNameProjectLocator : ProjectLocator {
-    override fun projectPath(root: String, context: ExtensionContext) =
-        Path(root, context.requiredTestClass.name.replace('.', '/'), context.requiredTestMethod.name)
+    override fun projectPath(
+        root: String,
+        context: ExtensionContext
+    ) = Path(root, context.requiredTestClass.name.replace('.', '/'), context.requiredTestMethod.name)
 }

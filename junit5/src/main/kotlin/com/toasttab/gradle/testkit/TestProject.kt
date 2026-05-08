@@ -51,15 +51,17 @@ class TestProject(
 
     private fun createRunner(vararg args: String) = createRunner().withArguments(initArgs + args)
 
-    private fun createRunner() = GradleRunner.create()
-        .withProjectDir(dir.toFile())
-        .forwardStdOutput(output)
-        .forwardStdError(output).apply {
-            if (gradleVersion.version != null) {
-                withGradleVersion(gradleVersion.version)
-            }
-        }
-        .withArguments()
+    private fun createRunner() =
+        GradleRunner
+            .create()
+            .withProjectDir(dir.toFile())
+            .forwardStdOutput(output)
+            .forwardStdError(output)
+            .apply {
+                if (gradleVersion.version != null) {
+                    withGradleVersion(gradleVersion.version)
+                }
+            }.withArguments()
 
     fun logOutputOnce() {
         if (!outputLogged.getAndSet(true)) {

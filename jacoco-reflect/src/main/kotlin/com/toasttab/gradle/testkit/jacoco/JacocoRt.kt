@@ -30,7 +30,10 @@ private class ReflectiveJacocoAgent(
 ) : JacocoAgent {
     private val options by lazy {
         // agent.options
-        agent.javaClass.getDeclaredField("options").apply { isAccessible = true }.get(agent)
+        agent.javaClass
+            .getDeclaredField("options")
+            .apply { isAccessible = true }
+            .get(agent)
     }
 
     override val location: String
@@ -53,11 +56,12 @@ object JacocoRt {
 
     private val agentLookup by lazy {
         runCatching {
-            val rt = try {
-                ClassLoader.getSystemClassLoader().loadClass(RT_CLASS)
-            } catch (e: ClassNotFoundException) {
-                JacocoRt::class.java.classLoader.loadClass(RT_CLASS)
-            }
+            val rt =
+                try {
+                    ClassLoader.getSystemClassLoader().loadClass(RT_CLASS)
+                } catch (e: ClassNotFoundException) {
+                    JacocoRt::class.java.classLoader.loadClass(RT_CLASS)
+                }
 
             ReflectiveJacocoAgent(rt.getMethod("getAgent").invoke(null))
         }

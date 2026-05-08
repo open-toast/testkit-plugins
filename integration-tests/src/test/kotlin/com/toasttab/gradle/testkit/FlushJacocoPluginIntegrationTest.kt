@@ -48,12 +48,13 @@ class FlushJacocoPluginIntegrationTest {
                 """.trimIndent()
             )
 
-            TestProjectExtension.createProject(
-                projectDir = projectDir,
-                gradleVersion = GradleVersionArgument.of("8.7"),
-                cleanup = true,
-                coverageRecorder = recorder
-            ).build("build", "--configuration-cache", "--stacktrace")
+            TestProjectExtension
+                .createProject(
+                    projectDir = projectDir,
+                    gradleVersion = GradleVersionArgument.of("8.7"),
+                    cleanup = true,
+                    coverageRecorder = recorder
+                ).build("build", "--configuration-cache", "--stacktrace")
         }
 
         recorder.close()
@@ -61,15 +62,16 @@ class FlushJacocoPluginIntegrationTest {
         val classes = hashSetOf<String>()
 
         file.inputStream().buffered().use {
-            ExecutionDataReader(it).apply {
-                setExecutionDataVisitor { data ->
-                    if (data.name.startsWith("com/toasttab")) {
-                        classes.add(data.name)
+            ExecutionDataReader(it)
+                .apply {
+                    setExecutionDataVisitor { data ->
+                        if (data.name.startsWith("com/toasttab")) {
+                            classes.add(data.name)
+                        }
                     }
-                }
 
-                setSessionInfoVisitor { }
-            }.read()
+                    setSessionInfoVisitor { }
+                }.read()
         }
 
         expectThat(classes).contains(

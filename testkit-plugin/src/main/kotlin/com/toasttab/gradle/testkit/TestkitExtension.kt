@@ -22,7 +22,10 @@ abstract class TestkitExtension {
     abstract val testProjectsDir: Property<String>
     abstract val replaceTokens: MapProperty<String, String>
 
-    fun replaceToken(name: String, value: String) {
+    fun replaceToken(
+        name: String,
+        value: String
+    ) {
         replaceTokens.put(name, value)
     }
 }

@@ -36,7 +36,8 @@ class TestkitPluginIntegrationTest {
 
         val projectDir = dir.resolve("TestkitPluginIntegrationTest/filtering")
 
-        GradleRunner.create()
+        GradleRunner
+            .create()
             .withProjectDir(projectDir.toFile())
             .withPluginClasspath()
             .withArguments("test")

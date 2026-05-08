@@ -33,11 +33,12 @@ import strikt.assertions.isEqualTo
 class GradleVersionPropertiesIntegrationTest {
     @ParameterizedWithGradleVersions
     fun `per-version properties are attached to the test project`(project: TestProject) {
-        val expectedKotlin = when (project.gradleVersion.version) {
-            "8.6" -> "1.9.24"
-            "8.7" -> "2.0.0"
-            else -> error("unexpected gradle version ${project.gradleVersion.version}")
-        }
+        val expectedKotlin =
+            when (project.gradleVersion.version) {
+                "8.6" -> "1.9.24"
+                "8.7" -> "2.0.0"
+                else -> error("unexpected gradle version ${project.gradleVersion.version}")
+            }
 
         expectThat(project.property("kotlin")).isEqualTo(expectedKotlin)
     }
