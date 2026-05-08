@@ -31,7 +31,6 @@ class TestProject(
 ) {
     fun property(key: String): String? = gradleVersion.property(key)
 
-
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TestProject::class.java)
     }
