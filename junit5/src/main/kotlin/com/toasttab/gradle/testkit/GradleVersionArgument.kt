@@ -16,12 +16,23 @@
 package com.toasttab.gradle.testkit
 
 class GradleVersionArgument private constructor(
-    val version: String?
+    val version: String?,
+    val properties: Map<String, String> = emptyMap()
 ) {
-    override fun toString() = version ?: "default"
+    fun property(key: String): String? = properties[key]
+
+    override fun toString() = when {
+        version == null -> "default"
+        properties.isEmpty() -> version
+        else -> "$version${properties.entries.joinToString(prefix = " [", postfix = "]") { "${it.key}=${it.value}" }}"
+    }
 
     companion object {
-        fun of(version: String) = GradleVersionArgument(version)
+        fun of(version: String, properties: Map<String, String> = emptyMap()) =
+            GradleVersionArgument(version, properties)
+
+        fun of(spec: GradleVersion) =
+            GradleVersionArgument(spec.version, spec.properties.associate { it.key to it.value })
 
         val DEFAULT = GradleVersionArgument(null)
     }

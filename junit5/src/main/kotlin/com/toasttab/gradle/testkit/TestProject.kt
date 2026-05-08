@@ -25,10 +25,12 @@ import kotlin.io.path.deleteRecursively
 
 class TestProject(
     val dir: Path,
-    private val gradleVersion: GradleVersionArgument,
+    val gradleVersion: GradleVersionArgument,
     private val cleanup: Boolean,
     private val initArgs: List<String> = emptyList()
 ) {
+    fun property(key: String): String? = gradleVersion.property(key)
+
     companion object {
         private val LOGGER = LoggerFactory.getLogger(TestProject::class.java)
     }
