@@ -25,6 +25,7 @@ import kotlin.reflect.KClass
 @DisplayNameGeneration(TestKitDisplayNameGenerator::class)
 annotation class TestKit(
     val locator: KClass<out ProjectLocator> = SimpleNameProjectLocator::class,
+    @Deprecated("Use versions instead.", ReplaceWith("versions"))
     val gradleVersions: Array<String> = [],
     val versions: Array<GradleVersion> = [],
     val cleanup: Boolean = true
