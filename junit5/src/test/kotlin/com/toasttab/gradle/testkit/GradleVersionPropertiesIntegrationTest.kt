@@ -16,6 +16,7 @@
 package com.toasttab.gradle.testkit
 
 import strikt.api.expectThat
+import strikt.assertions.contains
 import strikt.assertions.isEqualTo
 
 @TestKit(
@@ -41,5 +42,19 @@ class GradleVersionPropertiesIntegrationTest {
             }
 
         expectThat(project.property("kotlin")).isEqualTo(expectedKotlin)
+    }
+
+    @ParameterizedWithGradleVersions
+    fun `per-version properties are used as replacement tokens`(project: TestProject) {
+        val expectedKotlin =
+            when (project.gradleVersion.version) {
+                "8.6" -> "1.9.24"
+                "8.7" -> "2.0.0"
+                else -> error("unexpected gradle version ${project.gradleVersion.version}")
+            }
+
+        val buildFile = project.dir.resolve("build.gradle.kts").toFile().readText()
+
+        expectThat(buildFile).contains("// kotlin token: $expectedKotlin")
     }
 }

@@ -151,6 +151,8 @@ class TestProjectExtension :
 
                     location.copyToRecursively(target = tempProjectDir, followLinks = false, overwrite = false)
 
+                    TokenReplacer.replaceInPlace(tempProjectDir, gradleVersion.properties)
+
                     createProject(
                         tempProjectDir,
                         gradleVersion,
