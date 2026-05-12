@@ -15,14 +15,17 @@
 
 package com.toasttab.gradle.testkit
 
-import org.apache.commons.text.StringSubstitutor
-import java.nio.charset.MalformedInputException
+import org.codehaus.plexus.interpolation.MapBasedValueSource
+import org.codehaus.plexus.interpolation.StringSearchInterpolator
+import org.codehaus.plexus.interpolation.multi.MultiDelimiterInterpolatorFilterReader
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.util.Properties
 import kotlin.io.path.isRegularFile
-import kotlin.io.path.readText
-import kotlin.io.path.writeText
 
 object TokenReplacer {
     private val fileTokens: Map<String, String> by lazy {
@@ -42,22 +45,47 @@ object TokenReplacer {
         val tokens = if (extraTokens.isEmpty()) fileTokens else fileTokens + extraTokens
         if (tokens.isEmpty()) return
 
-        val substitutor = StringSubstitutor(tokens, "@", "@")
+        val valueSource = MapBasedValueSource(tokens)
 
         Files.walk(root).use { stream ->
-            stream.filter { it.isRegularFile() }.forEach { path ->
-                val original =
-                    try {
-                        path.readText()
-                    } catch (_: MalformedInputException) {
-                        return@forEach
-                    }
+            stream.filter { it.isRegularFile() }.forEach { path -> replaceInFile(path, valueSource) }
+        }
+    }
 
-                val replaced = substitutor.replace(original)
-                if (replaced != original) {
-                    path.writeText(replaced)
-                }
+    private fun replaceInFile(
+        path: Path,
+        valueSource: MapBasedValueSource
+    ) {
+        val tmp = path.resolveSibling("${path.fileName}.tokens.tmp")
+
+        // ISO-8859-1 round-trips every byte as a distinct char, so binary files pass through
+        // untouched and UTF-8 text files are preserved byte-for-byte. Only ASCII @KEY@ tokens
+        // need to match, and those map identically in both encodings.
+        Files.newBufferedReader(path, StandardCharsets.ISO_8859_1).use { reader ->
+            val interpolator = StringSearchInterpolator("@", "@")
+            interpolator.addValueSource(valueSource)
+
+            val filtered =
+                BufferedReader(
+                    MultiDelimiterInterpolatorFilterReader(reader, interpolator).apply {
+                        addDelimiterSpec("@*@")
+                    }
+                )
+
+            Files.newBufferedWriter(tmp, StandardCharsets.ISO_8859_1).use { writer ->
+                filtered.copyTo(writer)
             }
+        }
+
+        Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING)
+    }
+
+    private fun BufferedReader.copyTo(writer: BufferedWriter) {
+        val buf = CharArray(8192)
+        while (true) {
+            val n = read(buf)
+            if (n < 0) break
+            writer.write(buf, 0, n)
         }
     }
 }
