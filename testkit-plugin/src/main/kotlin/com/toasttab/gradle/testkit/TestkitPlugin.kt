@@ -62,6 +62,11 @@ class TestkitPlugin
                     .withPropertyName("testkit-projects-input")
                     .withPathSensitivity(PathSensitivity.RELATIVE)
 
+                inputs
+                    .file(tokensFile)
+                    .withPropertyName("testkit-tokens-input")
+                    .withPathSensitivity(PathSensitivity.NONE)
+
                 // declare an additional jacoco output file so that the JUnit JVM and the TestKit JVM
                 // do not try to write to the same file
                 outputs.file(destfile).withPropertyName("testkit-coverage-output")
