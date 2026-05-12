@@ -53,7 +53,11 @@ class GradleVersionPropertiesIntegrationTest {
                 else -> error("unexpected gradle version ${project.gradleVersion.version}")
             }
 
-        val buildFile = project.dir.resolve("build.gradle.kts").toFile().readText()
+        val buildFile =
+            project.dir
+                .resolve("build.gradle.kts")
+                .toFile()
+                .readText()
 
         expectThat(buildFile).contains("// kotlin token: $expectedKotlin")
     }
