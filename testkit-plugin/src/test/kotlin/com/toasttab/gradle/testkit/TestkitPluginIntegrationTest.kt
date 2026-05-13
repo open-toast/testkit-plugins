@@ -21,9 +21,10 @@ import org.junit.jupiter.api.io.TempDir
 import strikt.api.expectThat
 import strikt.assertions.isEqualTo
 import java.nio.file.Path
+import java.util.Properties
 import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.copyToRecursively
-import kotlin.io.path.readText
+import kotlin.io.path.inputStream
 
 class TestkitPluginIntegrationTest {
     @TempDir
@@ -31,7 +32,7 @@ class TestkitPluginIntegrationTest {
 
     @OptIn(ExperimentalPathApi::class)
     @Test
-    fun filtering() {
+    fun `tokens properties file is written with user and built-in tokens`() {
         Path.of(System.getProperty("test-projects")).copyToRecursively(target = dir, followLinks = false, overwrite = false)
 
         val projectDir = dir.resolve("TestkitPluginIntegrationTest/filtering")
@@ -40,11 +41,13 @@ class TestkitPluginIntegrationTest {
             .create()
             .withProjectDir(projectDir.toFile())
             .withPluginClasspath()
-            .withArguments("test")
+            .withArguments("writeTestkitTokens")
             .build()
 
-        val data = projectDir.resolve("build/test-projects/test-project/foo").readText().trim()
+        val props = Properties()
+        projectDir.resolve("build/testkit/tokens.properties").inputStream().use { props.load(it) }
 
-        expectThat(data).isEqualTo("hello world!")
+        expectThat(props.getProperty("VALUE")).isEqualTo("world!")
+        expectThat(props.getProperty("VERSION")).isEqualTo("1.0")
     }
 }
