@@ -23,8 +23,10 @@ import java.io.BufferedWriter
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
-import java.nio.file.StandardCopyOption
 import java.util.Properties
+import kotlin.io.path.CopyActionResult
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.copyToRecursively
 import kotlin.io.path.isRegularFile
 
 object TokenReplacer {
@@ -38,30 +40,40 @@ object TokenReplacer {
         props.stringPropertyNames().associateWith { props.getProperty(it) }
     }
 
-    fun replaceInPlace(
-        root: Path,
+    @OptIn(ExperimentalPathApi::class)
+    fun copyAndReplace(
+        source: Path,
+        target: Path,
         extraTokens: Map<String, String>
     ) {
         val tokens = if (extraTokens.isEmpty()) fileTokens else fileTokens + extraTokens
-        if (tokens.isEmpty()) return
+
+        if (tokens.isEmpty()) {
+            source.copyToRecursively(target = target, followLinks = false, overwrite = false)
+            return
+        }
 
         val valueSource = MapBasedValueSource(tokens)
 
-        Files.walk(root).use { stream ->
-            stream.filter { it.isRegularFile() }.forEach { path -> replaceInFile(path, valueSource) }
+        source.copyToRecursively(target = target, followLinks = false) { src, tgt ->
+            if (src.isRegularFile()) {
+                filterCopy(src, tgt, valueSource)
+            } else {
+                Files.createDirectories(tgt)
+            }
+            CopyActionResult.CONTINUE
         }
     }
 
-    private fun replaceInFile(
-        path: Path,
+    private fun filterCopy(
+        source: Path,
+        target: Path,
         valueSource: MapBasedValueSource
     ) {
-        val tmp = path.resolveSibling("${path.fileName}.tokens.tmp")
-
         // ISO-8859-1 round-trips every byte as a distinct char, so binary files pass through
         // untouched and UTF-8 text files are preserved byte-for-byte. Only ASCII @KEY@ tokens
         // need to match, and those map identically in both encodings.
-        Files.newBufferedReader(path, StandardCharsets.ISO_8859_1).use { reader ->
+        Files.newBufferedReader(source, StandardCharsets.ISO_8859_1).use { reader ->
             val interpolator = StringSearchInterpolator("@", "@")
             interpolator.addValueSource(valueSource)
 
@@ -72,12 +84,10 @@ object TokenReplacer {
                     }
                 )
 
-            Files.newBufferedWriter(tmp, StandardCharsets.ISO_8859_1).use { writer ->
+            Files.newBufferedWriter(target, StandardCharsets.ISO_8859_1).use { writer ->
                 filtered.copyTo(writer)
             }
         }
-
-        Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING)
     }
 
     private fun BufferedReader.copyTo(writer: BufferedWriter) {
