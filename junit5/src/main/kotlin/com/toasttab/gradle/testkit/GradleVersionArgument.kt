@@ -21,12 +21,14 @@ class GradleVersionArgument private constructor(
 ) {
     fun property(key: String): String? = properties[key]
 
-    override fun toString() =
-        when {
-            version == null -> "default"
-            properties.isEmpty() -> version
-            else -> "$version${properties.entries.joinToString(prefix = " [", postfix = "]") { "${it.key}=${it.value}" }}"
+    override fun toString(): String {
+        val versionPart = version ?: "default"
+        return if (properties.isEmpty()) {
+            versionPart
+        } else {
+            "$versionPart${properties.entries.joinToString(prefix = " [", postfix = "]") { "${it.key}=${it.value}" }}"
         }
+    }
 
     companion object {
         fun of(
@@ -35,6 +37,14 @@ class GradleVersionArgument private constructor(
         ) = GradleVersionArgument(version, properties)
 
         fun of(spec: GradleVersion) = GradleVersionArgument(spec.version, spec.properties.associate { it.key to it.value })
+
+        /**
+         * Produce a new argument with [overrides] merged onto [base]'s properties (overrides win).
+         */
+        fun of(
+            base: GradleVersionArgument,
+            overrides: Map<String, String>
+        ) = GradleVersionArgument(base.version, base.properties + overrides)
 
         val DEFAULT = GradleVersionArgument(null)
     }

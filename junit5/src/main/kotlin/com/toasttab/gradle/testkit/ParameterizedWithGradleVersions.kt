@@ -23,5 +23,6 @@ import org.junit.jupiter.params.provider.ArgumentsSource
 annotation class ParameterizedWithGradleVersions(
     @Deprecated("Use versions instead.", ReplaceWith("versions"))
     val value: Array<String> = [],
-    val versions: Array<GradleVersion> = []
+    val versions: Array<GradleVersion> = [],
+    val matrix: Array<Axis> = []
 )

@@ -28,5 +28,6 @@ annotation class TestKit(
     @Deprecated("Use versions instead.", ReplaceWith("versions"))
     val gradleVersions: Array<String> = [],
     val versions: Array<GradleVersion> = [],
+    val matrix: Array<Axis> = [],
     val cleanup: Boolean = true
 )

@@ -107,12 +107,27 @@ class TestProjectExtension :
         val methodAnn = context.requiredTestMethod.getAnnotation(ParameterizedWithGradleVersions::class.java)
         val classAnn = context.requiredTestClass.getAnnotation(TestKit::class.java)
 
-        val specs: List<GradleVersionArgument> =
+        val matrix = if (methodAnn.matrix.isNotEmpty()) methodAnn.matrix else classAnn.matrix
+
+        val baseSpecs: List<GradleVersionArgument> =
             when {
                 methodAnn.versions.isNotEmpty() -> methodAnn.versions.map(GradleVersionArgument::of)
                 methodAnn.value.isNotEmpty() -> methodAnn.value.map { GradleVersionArgument.of(it) }
                 classAnn.versions.isNotEmpty() -> classAnn.versions.map(GradleVersionArgument::of)
-                else -> classAnn.gradleVersions.map { GradleVersionArgument.of(it) }
+                classAnn.gradleVersions.isNotEmpty() -> classAnn.gradleVersions.map { GradleVersionArgument.of(it) }
+                matrix.isNotEmpty() -> listOf(GradleVersionArgument.DEFAULT)
+                else -> emptyList()
+            }
+
+        val specs =
+            if (matrix.isEmpty()) {
+                baseSpecs
+            } else {
+                baseSpecs.flatMap { base ->
+                    cartesianProduct(matrix).map { combo ->
+                        GradleVersionArgument.of(base, combo)
+                    }
+                }
             }
 
         return specs.map { Arguments.of(context.project(it)) }.stream()

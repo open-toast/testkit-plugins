@@ -26,3 +26,20 @@ annotation class Property(
     val key: String,
     val value: String
 )
+
+/**
+ * One axis of a property matrix. The cartesian product of all axes on a [TestKit] or
+ * [ParameterizedWithGradleVersions] is expanded into one test cell per combination.
+ */
+@Retention(AnnotationRetention.RUNTIME)
+annotation class Axis(
+    val key: String,
+    val values: Array<String>
+)
+
+internal fun cartesianProduct(axes: Array<Axis>): List<Map<String, String>> =
+    axes.fold(listOf(emptyMap())) { acc, axis ->
+        acc.flatMap { combo ->
+            axis.values.map { value -> combo + (axis.key to value) }
+        }
+    }
