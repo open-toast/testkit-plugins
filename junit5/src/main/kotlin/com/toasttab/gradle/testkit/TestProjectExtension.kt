@@ -176,17 +176,24 @@ class TestProjectExtension :
 
             val initArgs =
                 if (integrationRepo != null) {
+                    val customRepos =
+                        System.getProperty("testkit-plugin-repositories")
+                            ?.takeIf { it.isNotEmpty() }
+                            ?.split(',')
+                            ?.joinToString(separator = "\n") { """maven(url = "$it")""" }
+                    val repositoryBlock = customRepos ?: "gradlePluginPortal()"
+
                     projectDir.appendToFile(
                         "init.gradle.kts",
                         """
-                        
+
                         settingsEvaluated {
                             pluginManagement {
                                 repositories {
                                     maven(url = "file://$integrationRepo")
-                                    gradlePluginPortal()
+                                    $repositoryBlock
                                 }
-                                
+
                                 plugins {
                                     id("com.toasttab.testkit.coverage") version("$pluginVersion")
                                     $plugins

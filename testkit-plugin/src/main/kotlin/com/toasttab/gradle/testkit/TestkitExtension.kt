@@ -15,12 +15,22 @@
 
 package com.toasttab.gradle.testkit
 
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 
 abstract class TestkitExtension {
     abstract val testProjectsDir: Property<String>
     abstract val replaceTokens: MapProperty<String, String>
+
+    /**
+     * Maven repository URLs that the testkit init script should declare under
+     * `pluginManagement.repositories` for plugin resolution by the test project. If empty
+     * (the default), the init script falls back to `gradlePluginPortal()`. If non-empty, the
+     * listed URLs replace `gradlePluginPortal()` entirely — useful when your project resolves
+     * plugins from an internal mirror and shouldn't reach out to the public portal.
+     */
+    abstract val pluginRepositories: ListProperty<String>
 
     fun replaceToken(
         name: String,
