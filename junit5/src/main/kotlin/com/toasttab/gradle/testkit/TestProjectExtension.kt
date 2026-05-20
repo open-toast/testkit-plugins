@@ -30,11 +30,14 @@ import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.absolutePathString
 import kotlin.io.path.appendText
 import kotlin.io.path.copyToRecursively
 import kotlin.io.path.createFile
 import kotlin.io.path.createTempDirectory
+import kotlin.io.path.createTempFile
 import kotlin.io.path.exists
+import kotlin.io.path.writeText
 
 private val NAMESPACE = ExtensionContext.Namespace.create(TestProjectExtension::class.java.name, "testkit-project")
 private const val COVERAGE_RECORDER = "coverage-recorder"
@@ -176,17 +179,17 @@ class TestProjectExtension :
 
             val initArgs =
                 if (integrationRepo != null) {
-                    projectDir.appendToFile(
-                        "init.gradle.kts",
+                    // Write outside projectDir so the test project's lint/format tools don't see it.
+                    val initScript = createTempFile("testkit-init-", ".gradle.kts")
+                    initScript.writeText(
                         """
-                        
                         settingsEvaluated {
                             pluginManagement {
                                 repositories {
                                     maven(url = "file://$integrationRepo")
                                     gradlePluginPortal()
                                 }
-                                
+
                                 plugins {
                                     id("com.toasttab.testkit.coverage") version("$pluginVersion")
                                     $plugins
@@ -196,7 +199,7 @@ class TestProjectExtension :
                         """.trimIndent()
                     )
 
-                    listOf("--init-script", "init.gradle.kts")
+                    listOf("--init-script", initScript.absolutePathString())
                 } else {
                     emptyList()
                 }
