@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ParameterResolver
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
 import java.nio.file.Path
-import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
 import kotlin.io.path.ExperimentalPathApi
@@ -82,9 +81,19 @@ class TestProjectExtension :
     override fun supportsParameter(
         parameterContext: ParameterContext,
         extensionContext: ExtensionContext
-    ) = parameterContext.parameter.type == TestProject::class.java &&
-        extensionContext.parent.map { it::class.java.name } !=
-        Optional.of("org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext")
+    ): Boolean {
+        if (parameterContext.parameter.type != TestProject::class.java) {
+            return false
+        }
+        // When the test method is driven by @ParameterizedWithGradleVersions, this extension
+        // *also* serves as the ArgumentsProvider — so the TestProject argument is supplied via
+        // provideArguments(). Bowing out here keeps us from competing with JUnit's
+        // ParameterizedTestParameterResolver and triggering a "multiple competing resolvers"
+        // error. Plain @ParameterizedTest methods (e.g. with @MethodSource) get a TestProject
+        // injected normally.
+        val method = extensionContext.requiredTestMethod
+        return !method.isAnnotationPresent(ParameterizedWithGradleVersions::class.java)
+    }
 
     override fun resolveParameter(
         parameterContext: ParameterContext,
