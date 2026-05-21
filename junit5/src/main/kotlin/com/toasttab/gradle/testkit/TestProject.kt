@@ -35,6 +35,17 @@ class TestProject(
         private val LOGGER = LoggerFactory.getLogger(TestProject::class.java)
     }
 
+    private var debug: Boolean = false
+
+    /**
+     * Run subsequent [build] / [buildAndFail] calls in the test JVM
+     * (`GradleRunner.withDebug(true)`) so IDE breakpoints attach. Off by default; intended for
+     * ad-hoc debugging. Returns `this` for chaining: `project.withDebug(true).build("check")`.
+     */
+    fun withDebug(debug: Boolean) = apply {
+        this.debug = debug
+    }
+
     private val output = StringWriter()
     private val outputLogged = AtomicBoolean()
 
@@ -57,6 +68,7 @@ class TestProject(
             .withProjectDir(dir.toFile())
             .forwardStdOutput(output)
             .forwardStdError(output)
+            .withDebug(debug)
             .apply {
                 if (gradleVersion.version != null) {
                     withGradleVersion(gradleVersion.version)
