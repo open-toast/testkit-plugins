@@ -177,7 +177,8 @@ class TestProjectExtension :
             val initArgs =
                 if (integrationRepo != null) {
                     val customRepos =
-                        System.getProperty("testkit-plugin-repositories")
+                        System
+                            .getProperty("testkit-plugin-repositories")
                             ?.takeIf { it.isNotEmpty() }
                             ?.split(',')
                             ?.joinToString(separator = "\n") { """maven(url = "$it")""" }
