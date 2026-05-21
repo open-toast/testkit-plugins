@@ -79,11 +79,6 @@ class TestkitPlugin
                 systemProperty("testkit-projects", "${testProjectDir.get()}")
                 systemProperty("testkit-integration-repo", project.integrationDirectory().path)
                 systemProperty("testkit-plugin-version", BuildConfig.VERSION)
-
-                val pluginRepos = extension.pluginRepositories.getOrElse(emptyList())
-                if (pluginRepos.isNotEmpty()) {
-                    systemProperty("testkit-plugin-repositories", pluginRepos.joinToString(separator = ","))
-                }
             }
 
             project.configureIntegrationPublishing()
