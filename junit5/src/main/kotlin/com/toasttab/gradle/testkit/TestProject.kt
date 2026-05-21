@@ -42,9 +42,10 @@ class TestProject(
      * (`GradleRunner.withDebug(true)`) so IDE breakpoints attach. Off by default; intended for
      * ad-hoc debugging. Returns `this` for chaining: `project.withDebug(true).build("check")`.
      */
-    fun withDebug(debug: Boolean) = apply {
-        this.debug = debug
-    }
+    fun withDebug(debug: Boolean) =
+        apply {
+            this.debug = debug
+        }
 
     private val output = StringWriter()
     private val outputLogged = AtomicBoolean()
