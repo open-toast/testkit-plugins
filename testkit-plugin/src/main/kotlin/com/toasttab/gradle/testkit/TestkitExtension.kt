@@ -15,12 +15,14 @@
 
 package com.toasttab.gradle.testkit
 
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 
 abstract class TestkitExtension {
     abstract val testProjectsDir: Property<String>
     abstract val replaceTokens: MapProperty<String, String>
+    abstract val pluginRepositories: ListProperty<String>
 
     fun replaceToken(
         name: String,

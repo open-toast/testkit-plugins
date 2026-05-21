@@ -188,6 +188,14 @@ class TestProjectExtension :
 
             val initArgs =
                 if (integrationRepo != null) {
+                    val customRepos =
+                        System
+                            .getProperty("testkit-plugin-repositories")
+                            ?.takeIf { it.isNotEmpty() }
+                            ?.split(',')
+                            ?.joinToString(separator = "\n") { """maven(url = "$it")""" }
+                    val repositoryBlock = customRepos ?: "gradlePluginPortal()"
+
                     // Write outside projectDir so the test project's lint/format tools don't see it.
                     val initScript = createTempFile("testkit-init-", ".gradle.kts")
                     initScript.writeText(
@@ -196,7 +204,7 @@ class TestProjectExtension :
                             pluginManagement {
                                 repositories {
                                     maven(url = "file://$integrationRepo")
-                                    gradlePluginPortal()
+                                    $repositoryBlock
                                 }
 
                                 plugins {
