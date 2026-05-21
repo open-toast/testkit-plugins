@@ -59,8 +59,10 @@ class MethodSourceInteropIntegrationTest {
         @AfterAll
         fun assertAllRowsRan() {
             expectThat(OBSERVED).containsExactlyInAnyOrder(
-                "1.9.24" to "1.5.0", "1.9.24" to "1.7.1",
-                "2.0.0" to "1.5.0", "2.0.0" to "1.7.1"
+                "1.9.24" to "1.5.0",
+                "1.9.24" to "1.7.1",
+                "2.0.0" to "1.5.0",
+                "2.0.0" to "1.7.1"
             )
         }
     }
