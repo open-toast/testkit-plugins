@@ -26,13 +26,15 @@ import org.junit.jupiter.api.extension.ParameterResolver
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.ArgumentsProvider
 import java.nio.file.Path
-import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
+import kotlin.io.path.absolutePathString
 import kotlin.io.path.appendText
 import kotlin.io.path.createFile
 import kotlin.io.path.createTempDirectory
+import kotlin.io.path.createTempFile
 import kotlin.io.path.exists
+import kotlin.io.path.writeText
 
 private val NAMESPACE = ExtensionContext.Namespace.create(TestProjectExtension::class.java.name, "testkit-project")
 private const val COVERAGE_RECORDER = "coverage-recorder"
@@ -80,9 +82,19 @@ class TestProjectExtension :
     override fun supportsParameter(
         parameterContext: ParameterContext,
         extensionContext: ExtensionContext
-    ) = parameterContext.parameter.type == TestProject::class.java &&
-        extensionContext.parent.map { it::class.java.name } !=
-        Optional.of("org.junit.jupiter.engine.descriptor.TestTemplateExtensionContext")
+    ): Boolean {
+        if (parameterContext.parameter.type != TestProject::class.java) {
+            return false
+        }
+        // When the test method is driven by @ParameterizedWithGradleVersions, this extension
+        // *also* serves as the ArgumentsProvider — so the TestProject argument is supplied via
+        // provideArguments(). Bowing out here keeps us from competing with JUnit's
+        // ParameterizedTestParameterResolver and triggering a "multiple competing resolvers"
+        // error. Plain @ParameterizedTest methods (e.g. with @MethodSource) get a TestProject
+        // injected normally.
+        val method = extensionContext.requiredTestMethod
+        return !method.isAnnotationPresent(ParameterizedWithGradleVersions::class.java)
+    }
 
     override fun resolveParameter(
         parameterContext: ParameterContext,
@@ -173,17 +185,17 @@ class TestProjectExtension :
 
             val initArgs =
                 if (integrationRepo != null) {
-                    projectDir.appendToFile(
-                        "init.gradle.kts",
+                    // Write outside projectDir so the test project's lint/format tools don't see it.
+                    val initScript = createTempFile("testkit-init-", ".gradle.kts")
+                    initScript.writeText(
                         """
-                        
                         settingsEvaluated {
                             pluginManagement {
                                 repositories {
                                     maven(url = "file://$integrationRepo")
                                     gradlePluginPortal()
                                 }
-                                
+
                                 plugins {
                                     id("com.toasttab.testkit.coverage") version("$pluginVersion")
                                     $plugins
@@ -193,7 +205,7 @@ class TestProjectExtension :
                         """.trimIndent()
                     )
 
-                    listOf("--init-script", "init.gradle.kts")
+                    listOf("--init-script", initScript.absolutePathString())
                 } else {
                     emptyList()
                 }
