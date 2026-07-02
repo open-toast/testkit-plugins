@@ -52,10 +52,15 @@ class TestkitPlugin
                     outputFile.set(tokensFile)
                 }
 
+            val filterIncludes = extension.filterIncludes.map { it.joinToString(",") }.orElse("")
+
             project.tasks.named<Test>("test") {
                 dependsOn(writeTokens)
 
                 doFirst(JacocoOutputCleanupTestTaskAction(fs, destfile))
+
+                inputs
+                    .property("testkit-filter-includes", filterIncludes)
 
                 inputs
                     .dir(testProjectsDir)
@@ -74,6 +79,7 @@ class TestkitPlugin
                 systemProperty("testkit-coverage-output", "${destfile.get()}")
                 systemProperty("testkit-projects", testProjectsDir.get().asFile.path)
                 systemProperty("testkit-tokens", tokensFile.get().asFile.path)
+                systemProperty("testkit-filter-includes", filterIncludes.get())
                 systemProperty("testkit-integration-repo", project.integrationDirectory().path)
                 systemProperty("testkit-plugin-version", BuildConfig.VERSION)
             }

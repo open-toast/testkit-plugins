@@ -18,14 +18,15 @@ package com.toasttab.gradle.testkit
 import org.codehaus.plexus.interpolation.MapBasedValueSource
 import org.codehaus.plexus.interpolation.StringSearchInterpolator
 import org.codehaus.plexus.interpolation.multi.MultiDelimiterInterpolatorFilterReader
-import java.io.BufferedReader
-import java.io.BufferedWriter
 import java.nio.charset.StandardCharsets
+import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.PathMatcher
 import java.util.Properties
 import kotlin.io.path.CopyActionResult
 import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.copyTo
 import kotlin.io.path.copyToRecursively
 import kotlin.io.path.isRegularFile
 
@@ -40,14 +41,45 @@ object TokenReplacer {
         props.stringPropertyNames().associateWith { props.getProperty(it) }
     }
 
-    @OptIn(ExperimentalPathApi::class)
+    // Globs restricting which files are interpolated. Empty means every file is filtered;
+    // otherwise files that match no glob are copied verbatim. Each glob is matched against both
+    // the path relative to the test project root and the bare file name, so "*.gradle.kts" filters
+    // build scripts at any depth. Usually narrowed to the build scripts, e.g.
+    // "*.gradle.kts,*.gradle".
+    private val filterMatchers: List<PathMatcher> by lazy {
+        parseMatchers(System.getProperty("testkit-filter-includes"))
+    }
+
+    internal fun parseMatchers(spec: String?): List<PathMatcher> {
+        if (spec == null) return emptyList()
+        return spec
+            .split(',', '\n')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .map { FileSystems.getDefault().getPathMatcher("glob:$it") }
+    }
+
+    internal fun shouldFilter(
+        relative: Path,
+        matchers: List<PathMatcher>
+    ) = matchers.isEmpty() || matchers.any { it.matches(relative) || it.matches(relative.fileName) }
+
     fun copyAndReplace(
         source: Path,
         target: Path,
         extraTokens: Map<String, String>
     ) {
         val tokens = if (extraTokens.isEmpty()) fileTokens else fileTokens + extraTokens
+        copyAndReplace(source, target, tokens, filterMatchers)
+    }
 
+    @OptIn(ExperimentalPathApi::class)
+    internal fun copyAndReplace(
+        source: Path,
+        target: Path,
+        tokens: Map<String, String>,
+        matchers: List<PathMatcher>
+    ) {
         if (tokens.isEmpty()) {
             source.copyToRecursively(target = target, followLinks = false, overwrite = false)
             return
@@ -56,10 +88,10 @@ object TokenReplacer {
         val valueSource = MapBasedValueSource(tokens)
 
         source.copyToRecursively(target = target, followLinks = false) { src, tgt ->
-            if (src.isRegularFile()) {
-                filterCopy(src, tgt, valueSource)
-            } else {
-                Files.createDirectories(tgt)
+            when {
+                !src.isRegularFile() -> Files.createDirectories(tgt)
+                shouldFilter(source.relativize(src), matchers) -> filterCopy(src, tgt, valueSource)
+                else -> src.copyTo(tgt, overwrite = false)
             }
             CopyActionResult.CONTINUE
         }
@@ -78,24 +110,13 @@ object TokenReplacer {
             interpolator.addValueSource(valueSource)
 
             val filtered =
-                BufferedReader(
-                    MultiDelimiterInterpolatorFilterReader(reader, interpolator).apply {
-                        addDelimiterSpec("@*@")
-                    }
-                )
+                MultiDelimiterInterpolatorFilterReader(reader, interpolator).apply {
+                    addDelimiterSpec("@*@")
+                }
 
             Files.newBufferedWriter(target, StandardCharsets.ISO_8859_1).use { writer ->
                 filtered.copyTo(writer)
             }
-        }
-    }
-
-    private fun BufferedReader.copyTo(writer: BufferedWriter) {
-        val buf = CharArray(8192)
-        while (true) {
-            val n = read(buf)
-            if (n < 0) break
-            writer.write(buf, 0, n)
         }
     }
 }
