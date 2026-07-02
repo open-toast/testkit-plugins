@@ -15,6 +15,7 @@
 
 package com.toasttab.gradle.testkit
 
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 
@@ -22,10 +23,20 @@ abstract class TestkitExtension {
     abstract val testProjectsDir: Property<String>
     abstract val replaceTokens: MapProperty<String, String>
 
+    // Globs restricting which files have their tokens replaced. When empty, every file is filtered.
+    // Each glob is matched against both the path relative to the test project root and the bare
+    // file name, so filterIncludes("*.gradle.kts", "*.gradle") narrows filtering to the build
+    // scripts at any depth.
+    abstract val filterIncludes: ListProperty<String>
+
     fun replaceToken(
         name: String,
         value: String
     ) {
         replaceTokens.put(name, value)
+    }
+
+    fun filterIncludes(vararg globs: String) {
+        filterIncludes.addAll(*globs)
     }
 }

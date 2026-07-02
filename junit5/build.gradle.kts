@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.junit)
     implementation(gradleTestKit())
     implementation(libs.jacoco.core)
+    implementation(libs.plexus.interpolation)
 
     testImplementation(libs.strikt.core)
 }

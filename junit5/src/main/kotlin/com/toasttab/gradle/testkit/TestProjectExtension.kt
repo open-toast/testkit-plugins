@@ -28,10 +28,8 @@ import org.junit.jupiter.params.provider.ArgumentsProvider
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.Stream
-import kotlin.io.path.ExperimentalPathApi
 import kotlin.io.path.absolutePathString
 import kotlin.io.path.appendText
-import kotlin.io.path.copyToRecursively
 import kotlin.io.path.createFile
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.createTempFile
@@ -138,7 +136,6 @@ class TestProjectExtension :
             noinline f: (K) -> V
         ) = getOrComputeIfAbsent(key, f, V::class.java)
 
-        @OptIn(ExperimentalPathApi::class)
         private fun ExtensionContext.project(gradleVersion: GradleVersionArgument): TestProject {
             val parameters = requiredTestClass.getAnnotation(TestKit::class.java) ?: TestKit()
 
@@ -161,7 +158,7 @@ class TestProjectExtension :
                         error { "expected a test project in $location" }
                     }
 
-                    location.copyToRecursively(target = tempProjectDir, followLinks = false, overwrite = false)
+                    TokenReplacer.copyAndReplace(location, tempProjectDir, gradleVersion.properties)
 
                     createProject(
                         tempProjectDir,
