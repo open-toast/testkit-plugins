@@ -8,7 +8,7 @@ spotless = "8.9.0"
 jacoco = "0.8.15"
 
 # test
-junit = "5.10.0"
+junit = "6.1.3"
 strikt = "0.34.1"
 
 [libraries]
